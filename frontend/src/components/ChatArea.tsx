@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Send, User, Bot, Sparkles } from "lucide-react";
+import { Send, User, Bot, Sparkles, Volume2, Mic, Square } from "lucide-react";
 import type { Message, EmotionalState } from "../types";
 import { formatTime, getEmotionColor } from "../utils/formatters";
 
@@ -8,12 +8,24 @@ interface ChatAreaProps {
   onSendMessage: (text: string) => void;
   isGenerating: boolean;
   activeEmotion?: EmotionalState;
+  onSpeakMessage?: (text: string) => void;
+  isSpeaking?: boolean;
+  isRecording?: boolean;
+  onStartVoiceInput?: () => void;
+  onStopVoiceInput?: () => void;
+  speechError?: string | null;
 }
 
 export const ChatArea: React.FC<ChatAreaProps> = ({
   messages,
   onSendMessage,
   isGenerating,
+  onSpeakMessage,
+  isSpeaking = false,
+  isRecording = false,
+  onStartVoiceInput,
+  onStopVoiceInput,
+  speechError,
 }) => {
   const [inputText, setInputText] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -74,18 +86,33 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
               >
                 <div className="whitespace-pre-wrap">{message.content}</div>
 
-                {/* Metadata & Timestamp */}
-                <div className="mt-1.5 flex items-center justify-end space-x-2 text-[10px] opacity-70">
-                  {message.emotional_state?.dominant_emotion && (
-                    <span
-                      className={`capitalize px-1.5 py-0.2 rounded border ${getEmotionColor(
-                        message.emotional_state.dominant_emotion
-                      )}`}
-                    >
-                      {message.emotional_state.dominant_emotion}
-                    </span>
-                  )}
-                  <span>{formatTime(message.timestamp)}</span>
+                {/* Metadata & Actions */}
+                <div className="mt-2 flex items-center justify-between text-[10px] opacity-80 pt-1 border-t border-slate-700/40">
+                  <div className="flex items-center space-x-2">
+                    {!isUser && onSpeakMessage && (
+                      <button
+                        onClick={() => onSpeakMessage(message.content)}
+                        className="hover:text-cyan-300 transition-colors flex items-center space-x-1"
+                        title="Listen to spoken response (TTS)"
+                      >
+                        <Volume2 className="w-3.5 h-3.5" />
+                        <span>Speak</span>
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    {message.emotional_state?.dominant_emotion && (
+                      <span
+                        className={`capitalize px-1.5 py-0.2 rounded border ${getEmotionColor(
+                          message.emotional_state.dominant_emotion
+                        )}`}
+                      >
+                        {message.emotional_state.dominant_emotion}
+                      </span>
+                    )}
+                    <span>{formatTime(message.timestamp)}</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -100,13 +127,20 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
             </div>
             <div className="glass-card rounded-2xl rounded-tl-none px-4 py-3 text-xs text-slate-400 flex items-center space-x-2 border border-slate-800">
               <Sparkles className="w-3.5 h-3.5 text-cyan-400 animate-spin" />
-              <span>AI Companion is synthesizing multimodal context...</span>
+              <span>AI Companion is synthesizing conversational reply...</span>
             </div>
           </div>
         )}
 
         <div ref={messagesEndRef} />
       </div>
+
+      {/* Speech Error Banner (Graceful Degradation Notice) */}
+      {speechError && (
+        <div className="px-4 py-2 bg-amber-950/40 border-t border-amber-800/50 text-xs text-amber-300 flex items-center justify-between">
+          <span>{speechError}</span>
+        </div>
+      )}
 
       {/* Input Form Bar */}
       <div className="p-4 bg-slate-950/60 border-t border-slate-800/80">
@@ -115,12 +149,37 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Type your message to AI Companion (Phase 1 Foundation Shell)..."
+            placeholder={
+              isRecording
+                ? "Listening to voice input... Click mic icon to finish and transcribe."
+                : "Type a message or click mic for voice input..."
+            }
             rows={1}
-            className="w-full bg-slate-900/90 border border-slate-700/80 rounded-2xl pl-4 pr-24 py-3.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/50 resize-none transition-all"
+            className={`w-full bg-slate-900/90 border rounded-2xl pl-4 pr-32 py-3.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none resize-none transition-all ${
+              isRecording
+                ? "border-rose-500/80 ring-1 ring-rose-500/50 bg-rose-950/20"
+                : "border-slate-700/80 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/50"
+            }`}
           />
 
           <div className="absolute right-2.5 flex items-center space-x-1.5">
+            {/* Voice Dictation Mic Button */}
+            {onStartVoiceInput && onStopVoiceInput && (
+              <button
+                type="button"
+                onClick={isRecording ? onStopVoiceInput : onStartVoiceInput}
+                className={`p-2 rounded-xl transition-all ${
+                  isRecording
+                    ? "bg-rose-600 text-white animate-pulse shadow-md shadow-rose-600/40"
+                    : "bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700"
+                }`}
+                title={isRecording ? "Stop recording and transcribe" : "Voice input (Microphone)"}
+              >
+                {isRecording ? <Square className="w-4 h-4 fill-white" /> : <Mic className="w-4 h-4" />}
+              </button>
+            )}
+
+            {/* Send Button */}
             <button
               type="submit"
               disabled={!inputText.trim() || isGenerating}
@@ -139,9 +198,15 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
         <div className="mt-2 flex items-center justify-between text-[11px] text-slate-500 px-1">
           <span className="flex items-center space-x-1">
             <span>Shift + Enter for new line</span>
+            {isSpeaking && (
+              <span className="ml-2 flex items-center space-x-1 text-cyan-400 font-medium">
+                <Volume2 className="w-3.5 h-3.5 animate-pulse" />
+                <span>Speaking response...</span>
+              </span>
+            )}
           </span>
           <span className="hidden sm:inline">
-            Phase 1 Foundation UI Shell &bull; Phase 2 connects live RLPI/LLM chat
+            Phase 3 Speech Active &bull; STT/TTS adapters with graceful text fallback
           </span>
         </div>
       </div>

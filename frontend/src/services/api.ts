@@ -1,4 +1,4 @@
-import type { HealthStatus, ChatResponse, Session, Message } from "../types";
+import type { HealthStatus, ChatResponse, Session, Message, TranscriptionResponse } from "../types";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
@@ -80,6 +80,50 @@ class ApiService {
     }
 
     return response.json();
+  }
+
+  /**
+   * Transcribes voice audio blob into text via POST /api/speech/transcribe.
+   * Raw audio stream is discarded in memory.
+   */
+  async transcribeAudio(audioBlob: Blob): Promise<string> {
+    const formData = new FormData();
+    formData.append("file", audioBlob, "user_voice.wav");
+
+    const response = await fetch(`${this.baseUrl}/api/speech/transcribe`, {
+      method: "POST",
+      body: formData,
+    });
+
+    if (!response.ok) {
+      throw new Error(`Speech transcription failed with status ${response.status}`);
+    }
+
+    const data: TranscriptionResponse = await response.json();
+    return data.text;
+  }
+
+  /**
+   * Synthesizes text into spoken audio stream via POST /api/speech/synthesize.
+   */
+  async synthesizeSpeech(text: string, language: string = "en"): Promise<Blob> {
+    const response = await fetch(`${this.baseUrl}/api/speech/synthesize`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        text,
+        language,
+        voice: "default",
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Speech synthesis failed with status ${response.status}`);
+    }
+
+    return response.blob();
   }
 
   /**

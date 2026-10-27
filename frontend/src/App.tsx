@@ -6,6 +6,7 @@ import { ChatArea } from "./components/ChatArea";
 import { TelemetryDrawer } from "./components/TelemetryDrawer";
 import { SettingsModal } from "./components/SettingsModal";
 import { useHealth } from "./hooks/useHealth";
+import { useSpeech } from "./hooks/useSpeech";
 import { api } from "./services/api";
 import type {
   Message,
@@ -21,8 +22,37 @@ export const App: React.FC = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
 
-  // Initial emotional state (baseline neutral)
-  const [emotionalState] = useState<EmotionalState>({
+  // User preferences
+  const [preferences, setPreferences] = useState<UserPreferences>({
+    language: "en",
+    voiceAutoPlay: true,
+    cameraAnalysisEnabled: false,
+    microphoneAnalysisEnabled: true,
+    longTermMemoryEnabled: false,
+    emotionStorageEnabled: false,
+  });
+
+  // Speech custom hook for Phase 3
+  const {
+    micStatus,
+    isRecording,
+    isSpeaking,
+    speechError,
+    requestPermission: requestMicPermission,
+    startRecording,
+    stopRecording,
+    speakText,
+  } = useSpeech(preferences.language);
+
+  // Modality state for camera
+  const [cameraStatus, setCameraStatus] = useState<ModalityStatus>({
+    available: true,
+    active: false,
+    permission: "prompt",
+  });
+
+  // Normalized emotional state
+  const [emotionalState, setEmotionalState] = useState<EmotionalState>({
     dominant_emotion: "neutral",
     probabilities: {
       neutral: 0.85,
@@ -35,47 +65,26 @@ export const App: React.FC = () => {
     },
     confidence: 0.88,
     intensity: 0.45,
-    sources: ["text"],
+    sources: ["text", "voice"],
     timestamp: new Date().toISOString(),
     modality_status: {
       text: true,
-      voice: false,
+      voice: micStatus.permission === "granted",
       face: false,
     },
     uncertainty: 0.12,
   });
 
-  // Modality permission & active states
-  const [micStatus, setMicStatus] = useState<ModalityStatus>({
-    available: true,
-    active: false,
-    permission: "prompt",
-  });
-
-  const [cameraStatus, setCameraStatus] = useState<ModalityStatus>({
-    available: true,
-    active: false,
-    permission: "prompt",
-  });
-
-  // User preferences & consents
-  const [preferences, setPreferences] = useState<UserPreferences>({
-    language: "en",
-    voiceAutoPlay: false,
-    cameraAnalysisEnabled: false,
-    microphoneAnalysisEnabled: false,
-    longTermMemoryEnabled: false,
-    emotionStorageEnabled: false,
-  });
-
-  // Conversation messages
+  // Initial welcome message
   const [messages, setMessages] = useState<Message[]>([
     {
-      id: "welcome-phase-2",
+      id: "welcome-phase-3",
       role: "assistant",
       content:
-        "Hello! I am your AI Companion. Phase 2 — Basic Conversation & RLPI is active.\n\n" +
-        "You can chat with me naturally. Every message is processed through our server-side RLPI layer with persistent session history, while keeping your privacy safe.",
+        "Hello! I am your AI Companion. Phase 3 — Speech AI is active.\n\n" +
+        "• Voice Interaction: You can speak directly using the microphone, and I will transcribe and respond.\n" +
+        "• Spoken Audio (TTS): Click 'Speak' on any message, or enable Auto-Play in Settings to hear spoken replies.\n" +
+        "• Privacy Assurance: Audio is processed in memory and immediately discarded. Raw voice recordings are never stored.",
       timestamp: new Date().toISOString(),
       emotional_state: {
         dominant_emotion: "neutral",
@@ -84,7 +93,7 @@ export const App: React.FC = () => {
     },
   ]);
 
-  // Handle sending a live message to the backend
+  // Handle sending a message
   const handleSendMessage = async (text: string) => {
     const tempUserId = `user-${Date.now()}`;
     const userMsg: Message = {
@@ -98,7 +107,6 @@ export const App: React.FC = () => {
     setIsGenerating(true);
 
     try {
-      // Call live backend /api/chat endpoint
       const response = await api.sendMessage(text, sessionId || undefined);
 
       if (response.session_id) {
@@ -121,14 +129,18 @@ export const App: React.FC = () => {
       };
 
       setMessages((prev) => [...prev, assistantMsg]);
+
+      // If voiceAutoPlay is enabled, speak the reply aloud
+      if (preferences.voiceAutoPlay) {
+        speakText(response.message.content);
+      }
     } catch (error) {
       console.error("Chat error:", error);
       const errorMsg: Message = {
         id: `err-${Date.now()}`,
         role: "assistant",
         content:
-          "I apologize, but I had trouble processing that response. " +
-          "Please check that the backend is running and try again.",
+          "I apologize, but I had trouble processing that response. Text fallback is active.",
         timestamp: new Date().toISOString(),
       };
       setMessages((prev) => [...prev, errorMsg]);
@@ -137,16 +149,23 @@ export const App: React.FC = () => {
     }
   };
 
-  const handleToggleMic = () => {
-    if (micStatus.permission === "prompt") {
-      setMicStatus({
-        available: true,
-        active: true,
-        permission: "granted",
-      });
-      setPreferences((p) => ({ ...p, microphoneAnalysisEnabled: true }));
+  const handleToggleMic = async () => {
+    if (micStatus.permission !== "granted") {
+      const granted = await requestMicPermission();
+      if (granted) {
+        setEmotionalState((prev) => ({
+          ...prev,
+          modality_status: { ...prev.modality_status, voice: true },
+        }));
+      }
+    } else if (isRecording) {
+      stopRecording();
     } else {
-      setMicStatus((m) => ({ ...m, active: !m.active }));
+      startRecording((text) => {
+        if (text) {
+          handleSendMessage(text);
+        }
+      });
     }
   };
 
@@ -197,6 +216,7 @@ export const App: React.FC = () => {
               cameraStatus={cameraStatus}
               onToggleMic={handleToggleMic}
               onToggleCamera={handleToggleCamera}
+              isRecording={isRecording}
             />
           </div>
 
@@ -205,7 +225,7 @@ export const App: React.FC = () => {
             <CompanionAvatar
               emotion={emotionalState.dominant_emotion}
               intensity={emotionalState.intensity}
-              isThinking={isGenerating}
+              isThinking={isGenerating || isSpeaking}
             />
           </div>
 
@@ -215,6 +235,16 @@ export const App: React.FC = () => {
             onSendMessage={handleSendMessage}
             isGenerating={isGenerating}
             activeEmotion={emotionalState}
+            onSpeakMessage={speakText}
+            isSpeaking={isSpeaking}
+            isRecording={isRecording}
+            onStartVoiceInput={() =>
+              startRecording((text) => {
+                if (text) handleSendMessage(text);
+              })
+            }
+            onStopVoiceInput={stopRecording}
+            speechError={speechError}
           />
         </div>
 

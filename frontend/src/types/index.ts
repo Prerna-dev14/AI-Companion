@@ -64,6 +64,18 @@ export interface ChatResponse {
   created_at: string;
 }
 
+export interface TranscriptionResponse {
+  text: string;
+  language: string;
+  duration_sec?: number;
+}
+
+export interface SynthesisRequest {
+  text: string;
+  language?: string;
+  voice?: string;
+}
+
 export interface HealthStatus {
   status: "ok" | "degraded" | "down" | "connecting";
   app_name: string;

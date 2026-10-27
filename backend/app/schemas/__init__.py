@@ -9,6 +9,11 @@ from backend.app.schemas.chat import (
     SessionResponse,
     SessionDetailResponse,
 )
+from backend.app.schemas.speech import (
+    TranscriptionResponse,
+    SynthesisRequest,
+    SynthesisResponse,
+)
 
 __all__ = [
     "HealthResponse",
@@ -22,4 +27,7 @@ __all__ = [
     "SessionCreate",
     "SessionResponse",
     "SessionDetailResponse",
+    "TranscriptionResponse",
+    "SynthesisRequest",
+    "SynthesisResponse",
 ]

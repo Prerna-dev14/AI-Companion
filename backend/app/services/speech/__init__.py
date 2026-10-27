@@ -1,8 +1,23 @@
-"""Speech Service Module.
-Handles STT, TTS, and acoustic feature extraction behind adapters.
-To be expanded in Phase 3 & 5.
-"""
+from backend.app.services.speech.adapters import (
+    BaseSTTAdapter,
+    BaseTTSAdapter,
+    OpenAISTTAdapter,
+    FallbackSTTAdapter,
+    OpenAITTSAdapter,
+    GTTSAdapter,
+    SyntheticWavTTSAdapter,
+    get_stt_adapter,
+    get_tts_adapter,
+)
 
-class BaseSpeechAdapter:
-    """Base interface for STT/TTS adapters."""
-    pass
+__all__ = [
+    "BaseSTTAdapter",
+    "BaseTTSAdapter",
+    "OpenAISTTAdapter",
+    "FallbackSTTAdapter",
+    "OpenAITTSAdapter",
+    "GTTSAdapter",
+    "SyntheticWavTTSAdapter",
+    "get_stt_adapter",
+    "get_tts_adapter",
+]
