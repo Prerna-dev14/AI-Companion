@@ -2,6 +2,8 @@ from datetime import datetime
 from typing import Optional, List, Dict, Any
 from pydantic import BaseModel, Field
 
+from backend.app.schemas.emotion import EmotionalState
+
 class MessageBase(BaseModel):
     role: str = Field(..., description="Message role: 'user', 'assistant', or 'system'")
     content: str = Field(..., min_length=1, description="Message text content")
@@ -21,6 +23,10 @@ class ChatRequest(BaseModel):
     message: str = Field(..., min_length=1, max_length=10000, description="User message content")
     session_id: Optional[str] = Field(None, description="Existing session ID, or null to auto-create")
     user_id: Optional[str] = Field(None, description="User ID associated with request")
+    emotional_state: Optional[EmotionalState] = Field(
+        None,
+        description="Fused normalized emotional state from Emotion Engine guiding RLPI conversational strategy",
+    )
 
 class ChatResponse(BaseModel):
     session_id: str

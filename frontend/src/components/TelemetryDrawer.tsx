@@ -14,6 +14,7 @@ interface TelemetryDrawerProps {
   lastVisionSignal?: VisionSignalResponse | null;
   lastTextSignal?: TextEmotionResponse | null;
   lastVoiceSignal?: VoiceEmotionResponse | null;
+  activeStrategy?: string;
 }
 
 export const TelemetryDrawer: React.FC<TelemetryDrawerProps> = ({
@@ -22,6 +23,7 @@ export const TelemetryDrawer: React.FC<TelemetryDrawerProps> = ({
   lastVisionSignal,
   lastTextSignal,
   lastVoiceSignal,
+  activeStrategy,
 }) => {
   return (
     <aside className="w-84 border-l border-slate-800 bg-slate-950/70 backdrop-blur-xl p-5 flex flex-col justify-between overflow-y-auto">
@@ -107,6 +109,14 @@ export const TelemetryDrawer: React.FC<TelemetryDrawerProps> = ({
                 style={{ width: `${emotionalState.uncertainty * 100}%` }}
               />
             </div>
+          </div>
+
+          {/* Active RLPI Strategy (Phase 7) */}
+          <div className="mt-3 pt-3 border-t border-slate-800/80 flex items-center justify-between text-xs">
+            <span className="text-[10px] uppercase font-bold text-slate-400">RLPI Policy</span>
+            <span className="font-mono text-[11px] px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-300 border border-indigo-500/30">
+              {activeStrategy || "balanced_conversational"}
+            </span>
           </div>
         </div>
 

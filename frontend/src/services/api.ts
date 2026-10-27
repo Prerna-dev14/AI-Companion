@@ -9,6 +9,7 @@ import type {
   VoiceEmotionResponse,
   MultimodalFusionRequest,
   MultimodalFusionResponse,
+  EmotionalState,
 } from "../types";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
@@ -70,9 +71,14 @@ class ApiService {
   }
 
   /**
-   * Sends a user chat message to the live backend conversation/RLPI layer.
+   * Sends a user chat message to the live backend conversation/RLPI layer,
+   * injecting the fused emotional state to drive adaptive conversational strategies.
    */
-  async sendMessage(message: string, sessionId?: string): Promise<ChatResponse> {
+  async sendMessage(
+    message: string,
+    sessionId?: string,
+    emotionalState?: EmotionalState | null
+  ): Promise<ChatResponse> {
     const response = await fetch(`${this.baseUrl}/api/chat`, {
       method: "POST",
       headers: {
@@ -82,6 +88,7 @@ class ApiService {
       body: JSON.stringify({
         message,
         session_id: sessionId || null,
+        emotional_state: emotionalState || null,
       }),
     });
 

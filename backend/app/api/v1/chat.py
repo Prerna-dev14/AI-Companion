@@ -27,6 +27,7 @@ async def send_chat_message(
             message_text=payload.message,
             session_id=payload.session_id,
             user_id=payload.user_id,
+            emotional_state=payload.emotional_state,
         )
         return response
     except Exception as exc:

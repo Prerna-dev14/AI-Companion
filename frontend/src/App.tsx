@@ -26,6 +26,7 @@ export const App: React.FC = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [lastTextSignal, setLastTextSignal] = useState<TextEmotionResponse | null>(null);
+  const [activeStrategy, setActiveStrategy] = useState<string>("balanced_conversational");
 
   // User preferences
   const [preferences, setPreferences] = useState<UserPreferences>({
@@ -126,13 +127,13 @@ export const App: React.FC = () => {
   // Welcome announcement message
   const [messages, setMessages] = useState<Message[]>([
     {
-      id: "welcome-phase-6",
+      id: "welcome-phase-7",
       role: "assistant",
       content:
-        "Hello! I am your AI Companion. Phase 6 — Emotion Engine & Multimodal Signal Fusion is active.\n\n" +
-        "• Decoupled Fusion: Text sentiment/intent, voice prosody (pitch & energy), and camera facial expressions are fused via the independent Emotion Engine.\n" +
-        "• Normalized Emotional State: Real-time probabilities, confidence, arousal intensity, and uncertainty metrics are computed with temporal smoothing.\n" +
-        "• Multimodal Provenance: Active modality sources are tracked and verified live in the Emotion Telemetry drawer.",
+        "Hello! I am your AI Companion. Phase 7 — Emotion-Aware RLPI Strategy is active.\n\n" +
+        "• Adaptive Conversational Policies: Responses dynamically attune their tone and empathy to your fused emotional state (empathetic validation, supportive celebration, calm de-escalation, etc.).\n" +
+        "• Non-Diagnostic Safety Boundary: I will never declare your feelings as clinical facts or provide psychiatric diagnoses.\n" +
+        "• Real-Time Policy Inspection: View the active RLPI Strategy and multimodal provenance live in the Emotion Telemetry drawer.",
       timestamp: new Date().toISOString(),
       emotional_state: {
         dominant_emotion: "neutral",
@@ -155,47 +156,64 @@ export const App: React.FC = () => {
     setIsGenerating(true);
 
     try {
-      // Analyze text sentiment & intent concurrently with LLM response
-      const [chatResult, textEmotionResult] = await Promise.allSettled([
-        api.sendMessage(text, sessionId || undefined),
-        api.analyzeTextEmotion(text, preferences.language),
-      ]);
-
-      if (textEmotionResult.status === "fulfilled") {
-        setLastTextSignal(textEmotionResult.value);
-        // Fuse new text signal with existing modalities (Phase 6)
-        fuseSignals(textEmotionResult.value, lastVoiceSignal, lastVisionSignal);
+      // 1. Analyze text sentiment & intent and fuse with active modalities (Phase 7)
+      let resolvedTextSig: TextEmotionResponse | null = null;
+      try {
+        resolvedTextSig = await api.analyzeTextEmotion(text, preferences.language);
+        setLastTextSignal(resolvedTextSig);
+      } catch (e) {
+        console.warn("Text signal analysis failed:", e);
       }
 
-      if (chatResult.status === "fulfilled") {
-        const response = chatResult.value;
-        if (response.session_id) {
-          setSessionId(response.session_id);
+      let stateToUse = emotionalState;
+      if (resolvedTextSig || lastVoiceSignal || lastVisionSignal) {
+        try {
+          const fused = await api.fuseEmotions({
+            text_signal: resolvedTextSig,
+            voice_signal: lastVoiceSignal,
+            face_signal: lastVisionSignal,
+            session_id: sessionId,
+            previous_state: emotionalState,
+            persist: preferences.emotionStorageEnabled,
+          });
+          setEmotionalState(fused);
+          stateToUse = fused;
+        } catch (e) {
+          console.warn("Pre-chat fusion skipped:", e);
         }
+      }
 
-        const assistantMsg: Message = {
-          id: response.message.id || `assistant-${Date.now()}`,
-          role: "assistant",
-          content: response.message.content,
-          timestamp: response.created_at || new Date().toISOString(),
-          emotional_state: {
-            dominant_emotion: emotionalState.dominant_emotion,
-            confidence: emotionalState.confidence,
-          },
-          metadata_payload: {
-            response_strategy: response.response_strategy,
-            model_name: response.model_name,
-          },
-        };
+      // 2. Dispatch message to backend RLPI layer guided by normalized emotional state
+      const response = await api.sendMessage(text, sessionId || undefined, stateToUse);
 
-        setMessages((prev) => [...prev, assistantMsg]);
+      if (response.session_id) {
+        setSessionId(response.session_id);
+      }
 
-        // If voiceAutoPlay is enabled, speak the reply aloud
-        if (preferences.voiceAutoPlay) {
-          speakText(response.message.content);
-        }
-      } else {
-        throw chatResult.reason;
+      if (response.response_strategy) {
+        setActiveStrategy(response.response_strategy);
+      }
+
+      const assistantMsg: Message = {
+        id: response.message.id || `assistant-${Date.now()}`,
+        role: "assistant",
+        content: response.message.content,
+        timestamp: response.created_at || new Date().toISOString(),
+        emotional_state: {
+          dominant_emotion: stateToUse.dominant_emotion,
+          confidence: stateToUse.confidence,
+        },
+        metadata_payload: {
+          response_strategy: response.response_strategy,
+          model_name: response.model_name,
+        },
+      };
+
+      setMessages((prev) => [...prev, assistantMsg]);
+
+      // If voiceAutoPlay is enabled, speak the reply aloud
+      if (preferences.voiceAutoPlay) {
+        speakText(response.message.content);
       }
     } catch (error) {
       console.error("Chat error:", error);
@@ -314,6 +332,7 @@ export const App: React.FC = () => {
             lastVisionSignal={lastVisionSignal}
             lastTextSignal={lastTextSignal}
             lastVoiceSignal={lastVoiceSignal}
+            activeStrategy={activeStrategy}
           />
         )}
 

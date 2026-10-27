@@ -111,8 +111,54 @@ class LocalHeuristicLLMAdapter(BaseLLMAdapter):
     ) -> str:
         last_message = messages[-1]["content"] if messages else ""
         cleaned = last_message.strip().lower()
+        sys = (system_prompt or "").upper()
 
-        # Context-aware heuristic responses for conversational foundation
+        # Phase 7: Emotion-aware strategy adaptations
+        if "[EMPATHETIC_VALIDATION]" in sys:
+            return (
+                "I hear how heavy this feels, and I want you to know it's completely okay to feel this way. "
+                "I'm right here with you—take all the time you need. Would you like to talk through it, "
+                "or would you simply like a calm, supportive presence?"
+            )
+
+        if "[SUPPORTIVE_CELEBRATION]" in sys:
+            return (
+                "That is truly wonderful! Your positive energy and joy really shine through. "
+                "It brings a smile to celebrate this moment with you. What was the most meaningful part of this for you?"
+            )
+
+        if "[CALM_DEESCALATION]" in sys:
+            return (
+                "I hear how frustrating and difficult this situation is, and I completely understand why you're upset. "
+                "Let's take a steady breath together. I'm here to listen calmly and help you work through this with zero judgment."
+            )
+
+        if "[STRUCTURED_CLARIFICATION]" in sys:
+            return (
+                "It is completely normal to feel confused or uncertain about this. "
+                "Let's break this down together into simple, structured steps. "
+                "Which specific part would you like to start clarifying first?"
+            )
+
+        if "[DYNAMIC_ENGAGEMENT]" in sys:
+            return (
+                "Sounds like we could use a spark of fresh energy! Let's shake things up—would you like to explore an "
+                "intriguing creative dilemma, a thought-provoking idea, or pivot to something totally new?"
+            )
+
+        if "[INQUISITIVE_GROUNDING]" in sys:
+            return (
+                "That sounds like a real surprise! Take a moment to catch your breath and ground yourself. "
+                "What was your immediate reaction when you found out?"
+            )
+
+        if "[INQUISITIVE_ATTUNEMENT]" in sys:
+            return (
+                "I sense there might be mixed feelings or subtle thoughts going on right now. "
+                "I'm listening with an open mind and heart—how does everything feel from your perspective?"
+            )
+
+        # Context-aware fallback heuristics for conversational foundation
         if any(g in cleaned for g in ["hello", "hi", "hey", "greetings"]):
             return (
                 "Hello! It's wonderful to connect with you. I'm your AI Companion, "
@@ -129,9 +175,8 @@ class LocalHeuristicLLMAdapter(BaseLLMAdapter):
         if any(w in cleaned for w in ["help", "what can you do", "features"]):
             return (
                 "As your AI Companion, I can have natural, attentive conversations with you. "
-                "In this Phase 2 foundation, our text conversation is fully active with session memory. "
-                "As we progress through subsequent phases, I will also incorporate speech, facial cues, "
-                "and an independent emotion engine to adapt my tone naturally to your feelings."
+                "I incorporate speech, facial cues, and an independent Emotion Engine to dynamically adapt "
+                "my conversational tone and empathy to your feelings while respecting strict safety boundaries."
             )
 
         if any(w in cleaned for w in ["sad", "depressed", "unhappy", "down", "upset"]):

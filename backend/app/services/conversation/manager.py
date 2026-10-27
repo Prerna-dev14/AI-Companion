@@ -1,5 +1,5 @@
 import logging
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Any
 from datetime import datetime, timezone
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, desc
@@ -71,14 +71,15 @@ class ConversationManager:
         message_text: str,
         session_id: Optional[str] = None,
         user_id: Optional[str] = None,
+        emotional_state: Optional[Any] = None,
     ) -> ChatResponse:
         """
         Processes a user chat message:
         1. Ensures session exists
         2. Saves user message
         3. Retrieves conversation context
-        4. Queries RLPI engine
-        5. Saves assistant message
+        4. Queries RLPI engine with emotion-aware policy adaptation
+        5. Saves assistant message with strategy metadata
         6. Returns structured ChatResponse
         """
         session = await self.get_or_create_session(db, session_id=session_id, user_id=user_id)
@@ -102,10 +103,11 @@ class ConversationManager:
         all_messages = res.scalars().all()
         history = [{"role": m.role, "content": m.content} for m in all_messages]
 
-        # 3. Generate response via RLPI engine
+        # 3. Generate response via RLPI engine (Phase 7: Emotion-aware)
         rlpi_result = await self.rlpi_engine.generate_reply(
             user_message=message_text,
             conversation_history=history,
+            emotional_state=emotional_state,
         )
 
         # 4. Save assistant response
@@ -115,6 +117,7 @@ class ConversationManager:
             content=rlpi_result["content"],
             metadata_payload={
                 "response_strategy": rlpi_result["response_strategy"],
+                "inferred_emotion": rlpi_result.get("inferred_emotion"),
                 "model_name": rlpi_result["model_name"],
             },
         )
