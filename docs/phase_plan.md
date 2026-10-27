@@ -1,0 +1,14 @@
+# AI Companion — Controlled Implementation Sequence
+
+| Phase | Title | Status | Scope / Boundary |
+|---|---|---|---|
+| **Phase 1** | **Project Foundation** | **Completed** | Repo layout, React+TS+Vite, Tailwind, FastAPI, /api/health, modular service stubs, PostgreSQL schema models, unit tests, README. No emotion models or STT/TTS. |
+| **Phase 2** | **Basic RLPI / LLM Conversation** | **Completed** | `POST /api/chat`, `GET/POST /api/sessions`, modular LLM adapter (OpenAI & local fallback), context window manager, server-side RLPI response strategy, end-to-end verified with live multi-turn chat and database persistence. No emotion-driven adaptation. |
+| **Phase 3** | Speech AI | *Next* | STT/TTS adapters, audio permission UX, graceful text fallback. |
+| **Phase 4** | Computer Vision Signals | *Pending* | Explicit camera permission, face detection, expression signal adapter. No raw frame retention. |
+| **Phase 5** | Text and Voice Emotion Signals | *Pending* | NLP intent/sentiment and acoustic/prosodic feature extraction. |
+| **Phase 6** | Emotion Engine & Signal Fusion | *Pending* | Normalized EmotionalState fusion with confidence and uncertainty tracking across active modalities. |
+| **Phase 7** | Emotion-Aware RLPI Strategy | *Pending* | Adapting conversational responses based on normalized emotional state without diagnosing or asserting emotion as fact. |
+| **Phase 8** | Consent-Gated Memory | *Pending* | Session context, permission-controlled long-term memory, emotion event history, review/delete controls. |
+| **Phase 9** | Security, Privacy & Safety Hardening | *Pending* | Auth/authz, rate limits, audit logging, high-risk safety classification (self-harm/abuse defense). |
+| **Phase 10** | Validation, Observability & Deployment | *Pending* | E2E integration test suite, telemetry metrics, production build and deployment documentation. |
