@@ -161,3 +161,39 @@ export interface UserPreferences {
   longTermMemoryEnabled: boolean;
   emotionStorageEnabled: boolean;
 }
+
+export interface MemoryItem {
+  id: string;
+  user_id: string;
+  content: string;
+  category: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ConsentItem {
+  id: string;
+  user_id: string;
+  scope: string;
+  granted: boolean;
+  user_agent?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface EmotionHistoryItem {
+  id: string;
+  session_id?: string | null;
+  dominant_emotion: EmotionCategory;
+  confidence: number;
+  intensity: number;
+  uncertainty: number;
+  sources: string[];
+  created_at: string;
+}
+
+export interface EmotionHistoryResponse {
+  events: EmotionHistoryItem[];
+  total: number;
+}

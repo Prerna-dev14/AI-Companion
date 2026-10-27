@@ -28,6 +28,14 @@ from backend.app.schemas.emotion import (
     MultimodalFusionRequest,
     MultimodalFusionResponse,
 )
+from backend.app.schemas.memory import (
+    MemoryItemCreate,
+    MemoryItemResponse,
+    ConsentUpdate,
+    ConsentResponse,
+    EmotionEventItem,
+    EmotionHistoryResponse,
+)
 
 __all__ = [
     "HealthResponse",
@@ -54,4 +62,10 @@ __all__ = [
     "EmotionalState",
     "MultimodalFusionRequest",
     "MultimodalFusionResponse",
+    "MemoryItemCreate",
+    "MemoryItemResponse",
+    "ConsentUpdate",
+    "ConsentResponse",
+    "EmotionEventItem",
+    "EmotionHistoryResponse",
 ]

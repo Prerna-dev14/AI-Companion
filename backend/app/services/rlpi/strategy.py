@@ -105,11 +105,17 @@ class RLPIEngine:
         strategy: str,
         strategy_instruction: str,
         language: str = "en",
+        memories: Optional[List[str]] = None,
     ) -> str:
         """
-        Builds the server-side system instructions injecting the active emotion strategy
-        and mandatory safety and clinical non-diagnostic guardrails.
+        Builds the server-side system instructions injecting the active emotion strategy,
+        active consent-gated memories, and mandatory non-diagnostic guardrails.
         """
+        mem_section = ""
+        if memories and len(memories) > 0:
+            formatted_mems = "\n".join(f"- {m}" for m in memories)
+            mem_section = f"\nUSER REMEMBERED PREFERENCES (CONSENT-GRANTED):\n{formatted_mems}\n"
+
         return (
             "You are AI Companion, an empathetic, attentive, and thoughtful personal companion.\n\n"
             "MANDATORY SAFETY AND BOUNDARY GUIDELINE:\n"
@@ -117,7 +123,8 @@ class RLPIEngine:
             "- NEVER diagnose mental health conditions, clinical depression, or psychological disorders.\n"
             "- NEVER declare user emotions as clinical facts; use them strictly as an internal guide for conversational tone.\n\n"
             f"ACTIVE CONVERSATIONAL STRATEGY: [{strategy.upper()}]\n"
-            f"STRATEGY GUIDELINE: {strategy_instruction}\n\n"
+            f"STRATEGY GUIDELINE: {strategy_instruction}\n"
+            f"{mem_section}\n"
             "GENERAL GUIDELINES:\n"
             "- Speak naturally, warmly, and in an engaging manner.\n"
             "- Listen closely to context and ask thoughtful questions when appropriate.\n"
@@ -131,6 +138,7 @@ class RLPIEngine:
         conversation_history: List[Dict[str, str]],
         language: str = "en",
         emotional_state: Optional[Any] = None,
+        memories: Optional[List[str]] = None,
     ) -> Dict[str, Any]:
         """
         Evaluates context, selects emotion-aware response strategy, and queries the LLM adapter.
@@ -141,6 +149,7 @@ class RLPIEngine:
             strategy=strategy_name,
             strategy_instruction=strategy_instruction,
             language=language,
+            memories=memories,
         )
 
         # Build message history window (sliding context)

@@ -289,6 +289,133 @@ class ApiService {
     }));
   }
 
+  /**
+   * Consent-Gated Long-Term Memory (Phase 8)
+   */
+  async getMemories(userId?: string): Promise<import("../types").MemoryItem[]> {
+    const url = userId ? `${this.baseUrl}/api/memory?user_id=${encodeURIComponent(userId)}` : `${this.baseUrl}/api/memory`;
+    const response = await fetch(url, {
+      method: "GET",
+      headers: { "Accept": "application/json" },
+    });
+    if (!response.ok) {
+      return [];
+    }
+    return response.json();
+  }
+
+  async createMemory(content: string, category: string = "general", userId?: string): Promise<import("../types").MemoryItem> {
+    const response = await fetch(`${this.baseUrl}/api/memory`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+      },
+      body: JSON.stringify({
+        content,
+        category,
+        user_id: userId || null,
+      }),
+    });
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.message || `Failed to create memory (${response.status})`);
+    }
+    return response.json();
+  }
+
+  async deleteMemory(memoryId: string, userId?: string): Promise<void> {
+    const url = userId
+      ? `${this.baseUrl}/api/memory/${memoryId}?user_id=${encodeURIComponent(userId)}`
+      : `${this.baseUrl}/api/memory/${memoryId}`;
+    const response = await fetch(url, {
+      method: "DELETE",
+      headers: { "Accept": "application/json" },
+    });
+    if (!response.ok) {
+      throw new Error("Failed to delete memory item");
+    }
+  }
+
+  async clearAllMemories(userId?: string): Promise<void> {
+    const url = userId
+      ? `${this.baseUrl}/api/memory?user_id=${encodeURIComponent(userId)}`
+      : `${this.baseUrl}/api/memory`;
+    const response = await fetch(url, {
+      method: "DELETE",
+      headers: { "Accept": "application/json" },
+    });
+    if (!response.ok) {
+      throw new Error("Failed to purge memories");
+    }
+  }
+
+  /**
+   * User Privacy Consents (Phase 8)
+   */
+  async getConsents(userId?: string): Promise<import("../types").ConsentItem[]> {
+    const url = userId ? `${this.baseUrl}/api/consents?user_id=${encodeURIComponent(userId)}` : `${this.baseUrl}/api/consents`;
+    const response = await fetch(url, {
+      method: "GET",
+      headers: { "Accept": "application/json" },
+    });
+    if (!response.ok) {
+      return [];
+    }
+    return response.json();
+  }
+
+  async updateConsent(scope: string, granted: boolean, userId?: string): Promise<import("../types").ConsentItem> {
+    const response = await fetch(`${this.baseUrl}/api/consents`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+      },
+      body: JSON.stringify({
+        scope,
+        granted,
+        user_id: userId || null,
+      }),
+    });
+    if (!response.ok) {
+      throw new Error(`Failed to update consent for ${scope}`);
+    }
+    return response.json();
+  }
+
+  /**
+   * Emotion Event History (Phase 8)
+   */
+  async getEmotionHistory(sessionId?: string, limit: number = 20): Promise<import("../types").EmotionHistoryResponse> {
+    let url = `${this.baseUrl}/api/emotion/history?limit=${limit}`;
+    if (sessionId) {
+      url += `&session_id=${encodeURIComponent(sessionId)}`;
+    }
+    const response = await fetch(url, {
+      method: "GET",
+      headers: { "Accept": "application/json" },
+    });
+    if (!response.ok) {
+      return { events: [], total: 0 };
+    }
+    return response.json();
+  }
+
+  async clearEmotionHistory(sessionId?: string): Promise<void> {
+    let url = `${this.baseUrl}/api/emotion/history`;
+    if (sessionId) {
+      url += `?session_id=${encodeURIComponent(sessionId)}`;
+    }
+    const response = await fetch(url, {
+      method: "DELETE",
+      headers: { "Accept": "application/json" },
+    });
+    if (!response.ok) {
+      throw new Error("Failed to clear emotion history");
+    }
+  }
+
   getBaseUrl(): string {
     return this.baseUrl;
   }

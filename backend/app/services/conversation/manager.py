@@ -103,11 +103,16 @@ class ConversationManager:
         all_messages = res.scalars().all()
         history = [{"role": m.role, "content": m.content} for m in all_messages]
 
-        # 3. Generate response via RLPI engine (Phase 7: Emotion-aware)
+        # Retrieve active memory context if consent is granted (Phase 8)
+        from backend.app.services.memory.service import memory_service
+        active_memories = await memory_service.get_active_memory_context(db, session.user_id)
+
+        # 3. Generate response via RLPI engine (Phase 7: Emotion-aware, Phase 8: Consent-gated memory)
         rlpi_result = await self.rlpi_engine.generate_reply(
             user_message=message_text,
             conversation_history=history,
             emotional_state=emotional_state,
+            memories=active_memories,
         )
 
         # 4. Save assistant response

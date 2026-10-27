@@ -1,8 +1,3 @@
-"""Memory Service Module.
-Handles session context and permission-controlled long-term memory.
-To be expanded in Phase 8.
-"""
+from backend.app.services.memory.service import MemoryService, memory_service
 
-class BaseMemoryService:
-    """Base interface for consent-aware memory store."""
-    pass
+__all__ = ["MemoryService", "memory_service"]

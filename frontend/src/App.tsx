@@ -124,16 +124,35 @@ export const App: React.FC = () => {
     }
   }, [lastVoiceSignal]);
 
+  // Sync user consents on mount (Phase 8)
+  useEffect(() => {
+    const syncConsents = async () => {
+      try {
+        const consents = await api.getConsents();
+        const ltm = consents.find((c) => c.scope === "long_term_memory");
+        const emo = consents.find((c) => c.scope === "emotion_storage");
+        setPreferences((prev) => ({
+          ...prev,
+          longTermMemoryEnabled: ltm ? ltm.granted : prev.longTermMemoryEnabled,
+          emotionStorageEnabled: emo ? emo.granted : prev.emotionStorageEnabled,
+        }));
+      } catch (e) {
+        console.warn("Failed to fetch consents on startup:", e);
+      }
+    };
+    syncConsents();
+  }, []);
+
   // Welcome announcement message
   const [messages, setMessages] = useState<Message[]>([
     {
-      id: "welcome-phase-7",
+      id: "welcome-phase-8",
       role: "assistant",
       content:
-        "Hello! I am your AI Companion. Phase 7 — Emotion-Aware RLPI Strategy is active.\n\n" +
-        "• Adaptive Conversational Policies: Responses dynamically attune their tone and empathy to your fused emotional state (empathetic validation, supportive celebration, calm de-escalation, etc.).\n" +
-        "• Non-Diagnostic Safety Boundary: I will never declare your feelings as clinical facts or provide psychiatric diagnoses.\n" +
-        "• Real-Time Policy Inspection: View the active RLPI Strategy and multimodal provenance live in the Emotion Telemetry drawer.",
+        "Hello! I am your AI Companion. Phase 8 — Consent-Gated Memory & History is active.\n\n" +
+        "• Permission-Controlled Long-Term Memory: When explicitly consented, key preferences and context persist across sessions and guide conversational RLPI strategies.\n" +
+        "• Strict Privacy Sovereignty: Without consent, long-term memory creation is strictly rejected (HTTP 403 Forbidden).\n" +
+        "• Right to be Forgotten: Inspect, selectively delete, or completely purge all stored memory items and emotion history at any time in Settings.",
       timestamp: new Date().toISOString(),
       emotional_state: {
         dominant_emotion: "neutral",
