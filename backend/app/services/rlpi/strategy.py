@@ -170,11 +170,18 @@ class RLPIEngine:
                 system_prompt=system_prompt,
             )
         except Exception as exc:
-            logger.error(f"Error during LLM response generation: {exc}")
-            reply_text = (
-                "I am here and listening, though I experienced a brief connection hiccup. "
-                "Could you please repeat that?"
-            )
+            logger.error(f"Error during LLM response generation: {exc}. Using heuristic fallback.")
+            try:
+                from backend.app.services.rlpi.llm_adapter import LocalHeuristicLLMAdapter
+                fallback_adapter = LocalHeuristicLLMAdapter()
+                reply_text = await fallback_adapter.generate_response(
+                    messages=context_messages,
+                    system_prompt=system_prompt,
+                )
+            except Exception:
+                reply_text = (
+                    "I am right here with you and listening. Could you tell me a little more about how you're feeling?"
+                )
 
         inferred_emotion = None
         if emotional_state:
