@@ -99,6 +99,32 @@ export interface VisionSignalResponse {
   timestamp: string;
 }
 
+export interface TextEmotionResponse {
+  modality: "text";
+  intent: string;
+  sentiment_score: number;
+  probabilities: Record<EmotionCategory, number>;
+  confidence: number;
+  detected_language: string;
+  timestamp: string;
+}
+
+export interface VoiceEmotionResponse {
+  modality: "voice";
+  acoustic_features: {
+    pitch_hz: number;
+    rms_energy: number;
+    tempo_estimate: number;
+    spectral_brightness: number;
+    duration_sec?: number;
+  };
+  probabilities: Record<EmotionCategory, number>;
+  confidence: number;
+  speaking_rate: "slow" | "normal" | "fast";
+  energy_level: "low" | "medium" | "high";
+  timestamp: string;
+}
+
 export interface HealthStatus {
   status: "ok" | "degraded" | "down" | "connecting";
   app_name: string;

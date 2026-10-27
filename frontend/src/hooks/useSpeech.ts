@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from "react";
-import type { ModalityStatus } from "../types";
+import type { ModalityStatus, VoiceEmotionResponse } from "../types";
 import { api } from "../services/api";
 
 export function useSpeech(language: string = "en") {
@@ -11,6 +11,7 @@ export function useSpeech(language: string = "en") {
   const [isRecording, setIsRecording] = useState<boolean>(false);
   const [isSpeaking, setIsSpeaking] = useState<boolean>(false);
   const [speechError, setSpeechError] = useState<string | null>(null);
+  const [lastVoiceSignal, setLastVoiceSignal] = useState<VoiceEmotionResponse | null>(null);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -93,10 +94,21 @@ export function useSpeech(language: string = "en") {
           });
 
           try {
-            // Transcribe using backend API
-            const transcribedText = await api.transcribeAudio(audioBlob);
-            if (transcribedText) {
-              onTranscribe(transcribedText);
+            // Run transcription and voice prosody analysis concurrently (Phase 5)
+            const [sttResult, prosodyResult] = await Promise.allSettled([
+              api.transcribeAudio(audioBlob),
+              api.analyzeVoiceEmotion(audioBlob),
+            ]);
+
+            if (prosodyResult.status === "fulfilled") {
+              setLastVoiceSignal(prosodyResult.value);
+            }
+
+            if (sttResult.status === "fulfilled" && sttResult.value) {
+              onTranscribe(sttResult.value);
+            } else if (sttResult.status === "rejected") {
+              console.warn("Backend STT error:", sttResult.reason);
+              setSpeechError("Voice transcription failed. You can continue typing in text mode.");
             }
           } catch (err: any) {
             console.warn("Backend STT error, trying browser fallback recognition:", err);
@@ -196,6 +208,7 @@ export function useSpeech(language: string = "en") {
     isRecording,
     isSpeaking,
     speechError,
+    lastVoiceSignal,
     requestPermission,
     startRecording,
     stopRecording,

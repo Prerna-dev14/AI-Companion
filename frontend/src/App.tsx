@@ -14,6 +14,7 @@ import type {
   Message,
   EmotionalState,
   UserPreferences,
+  TextEmotionResponse,
 } from "./types";
 
 export const App: React.FC = () => {
@@ -22,6 +23,7 @@ export const App: React.FC = () => {
   const [showSettings, setShowSettings] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
+  const [lastTextSignal, setLastTextSignal] = useState<TextEmotionResponse | null>(null);
 
   // User preferences
   const [preferences, setPreferences] = useState<UserPreferences>({
@@ -33,12 +35,13 @@ export const App: React.FC = () => {
     emotionStorageEnabled: false,
   });
 
-  // Speech custom hook (Phase 3)
+  // Speech custom hook (Phase 3 & Phase 5 Voice Prosody)
   const {
     micStatus,
     isRecording,
     isSpeaking,
     speechError,
+    lastVoiceSignal,
     requestPermission: requestMicPermission,
     startRecording,
     stopRecording,
@@ -83,13 +86,13 @@ export const App: React.FC = () => {
   // Welcome announcement message
   const [messages, setMessages] = useState<Message[]>([
     {
-      id: "welcome-phase-4",
+      id: "welcome-phase-5",
       role: "assistant",
       content:
-        "Hello! I am your AI Companion. Phase 4 — Computer Vision Signals is active.\n\n" +
-        "• Camera Vision Signals: Click 'Camera' to enable optional, permission-gated face detection and lighting analysis.\n" +
-        "• Privacy Assurance: Frames are processed strictly in-memory and discarded immediately. No raw frames or face biometric identities are stored.\n" +
-        "• Resilient Fallback: If camera access is denied or lighting is poor, conversation continues seamlessly in text and voice.",
+        "Hello! I am your AI Companion. Phase 5 — Text and Voice Signals is active.\n\n" +
+        "• Text NLP Extraction: Sentiment valence (-1.0 to +1.0) and intent classification are derived from every message.\n" +
+        "• Voice Acoustic Prosody: Pitch (F0), RMS energy, tempo, and speaking rate are extracted from voice input in-memory.\n" +
+        "• Emotion Engine Independence: Modality signals remain decoupled and are inspected live in the Emotion Telemetry drawer.",
       timestamp: new Date().toISOString(),
       emotional_state: {
         dominant_emotion: "neutral",
@@ -112,32 +115,45 @@ export const App: React.FC = () => {
     setIsGenerating(true);
 
     try {
-      const response = await api.sendMessage(text, sessionId || undefined);
+      // Analyze text sentiment & intent concurrently with LLM response (Phase 5)
+      const [chatResult, textEmotionResult] = await Promise.allSettled([
+        api.sendMessage(text, sessionId || undefined),
+        api.analyzeTextEmotion(text, preferences.language),
+      ]);
 
-      if (response.session_id) {
-        setSessionId(response.session_id);
+      if (textEmotionResult.status === "fulfilled") {
+        setLastTextSignal(textEmotionResult.value);
       }
 
-      const assistantMsg: Message = {
-        id: response.message.id || `assistant-${Date.now()}`,
-        role: "assistant",
-        content: response.message.content,
-        timestamp: response.created_at || new Date().toISOString(),
-        emotional_state: {
-          dominant_emotion: emotionalState.dominant_emotion,
-          confidence: emotionalState.confidence,
-        },
-        metadata_payload: {
-          response_strategy: response.response_strategy,
-          model_name: response.model_name,
-        },
-      };
+      if (chatResult.status === "fulfilled") {
+        const response = chatResult.value;
+        if (response.session_id) {
+          setSessionId(response.session_id);
+        }
 
-      setMessages((prev) => [...prev, assistantMsg]);
+        const assistantMsg: Message = {
+          id: response.message.id || `assistant-${Date.now()}`,
+          role: "assistant",
+          content: response.message.content,
+          timestamp: response.created_at || new Date().toISOString(),
+          emotional_state: {
+            dominant_emotion: emotionalState.dominant_emotion,
+            confidence: emotionalState.confidence,
+          },
+          metadata_payload: {
+            response_strategy: response.response_strategy,
+            model_name: response.model_name,
+          },
+        };
 
-      // If voiceAutoPlay is enabled, speak the reply aloud
-      if (preferences.voiceAutoPlay) {
-        speakText(response.message.content);
+        setMessages((prev) => [...prev, assistantMsg]);
+
+        // If voiceAutoPlay is enabled, speak the reply aloud
+        if (preferences.voiceAutoPlay) {
+          speakText(response.message.content);
+        }
+      } else {
+        throw chatResult.reason;
       }
     } catch (error) {
       console.error("Chat error:", error);
@@ -254,6 +270,8 @@ export const App: React.FC = () => {
             emotionalState={emotionalState}
             onClose={() => setShowTelemetry(false)}
             lastVisionSignal={lastVisionSignal}
+            lastTextSignal={lastTextSignal}
+            lastVoiceSignal={lastVoiceSignal}
           />
         )}
 

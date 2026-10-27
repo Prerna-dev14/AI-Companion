@@ -19,6 +19,12 @@ from backend.app.schemas.vision import (
     Base64VisionPayload,
     BoundingBox,
 )
+from backend.app.schemas.emotion import (
+    TextEmotionRequest,
+    TextEmotionResponse,
+    VoiceEmotionRequest,
+    VoiceEmotionResponse,
+)
 
 __all__ = [
     "HealthResponse",
@@ -38,4 +44,8 @@ __all__ = [
     "VisionSignalResponse",
     "Base64VisionPayload",
     "BoundingBox",
+    "TextEmotionRequest",
+    "TextEmotionResponse",
+    "VoiceEmotionRequest",
+    "VoiceEmotionResponse",
 ]

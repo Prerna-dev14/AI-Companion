@@ -5,6 +5,8 @@ import type {
   Message,
   TranscriptionResponse,
   VisionSignalResponse,
+  TextEmotionResponse,
+  VoiceEmotionResponse,
 } from "../types";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
@@ -148,6 +150,50 @@ class ApiService {
 
     if (!response.ok) {
       throw new Error(`Vision facial analysis failed with status ${response.status}`);
+    }
+
+    return response.json();
+  }
+
+  /**
+   * Analyzes text for intent and sentiment/emotion signals (Phase 5).
+   * Operates independently of LLM conversational response.
+   */
+  async analyzeTextEmotion(text: string, language: string = "en"): Promise<TextEmotionResponse> {
+    const response = await fetch(`${this.baseUrl}/api/emotion/text`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+      },
+      body: JSON.stringify({
+        text,
+        language,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Text emotion analysis failed with status ${response.status}`);
+    }
+
+    return response.json();
+  }
+
+  /**
+   * Extracts acoustic prosody signals from voice audio bytes (Phase 5).
+   * Audio is processed in-memory and immediately discarded.
+   */
+  async analyzeVoiceEmotion(audioBlob: Blob): Promise<VoiceEmotionResponse> {
+    const formData = new FormData();
+    formData.append("file", audioBlob, "voice_sample.wav");
+
+    const response = await fetch(`${this.baseUrl}/api/emotion/voice`, {
+      method: "POST",
+      body: formData,
+    });
+
+    if (!response.ok) {
+      throw new Error(`Voice prosody analysis failed with status ${response.status}`);
     }
 
     return response.json();

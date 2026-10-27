@@ -1,21 +1,30 @@
 import React from "react";
-import { Cpu, ShieldCheck, Layers, X, Camera, Sun } from "lucide-react";
-import type { EmotionalState, VisionSignalResponse } from "../types";
+import { Cpu, ShieldCheck, Layers, X, Camera, Sun, MessageSquare, Volume2, Activity } from "lucide-react";
+import type {
+  EmotionalState,
+  VisionSignalResponse,
+  TextEmotionResponse,
+  VoiceEmotionResponse,
+} from "../types";
 import { formatPercentage, getEmotionColor } from "../utils/formatters";
 
 interface TelemetryDrawerProps {
   emotionalState: EmotionalState;
   onClose: () => void;
   lastVisionSignal?: VisionSignalResponse | null;
+  lastTextSignal?: TextEmotionResponse | null;
+  lastVoiceSignal?: VoiceEmotionResponse | null;
 }
 
 export const TelemetryDrawer: React.FC<TelemetryDrawerProps> = ({
   emotionalState,
   onClose,
   lastVisionSignal,
+  lastTextSignal,
+  lastVoiceSignal,
 }) => {
   return (
-    <aside className="w-80 border-l border-slate-800 bg-slate-950/70 backdrop-blur-xl p-5 flex flex-col justify-between overflow-y-auto">
+    <aside className="w-84 border-l border-slate-800 bg-slate-950/70 backdrop-blur-xl p-5 flex flex-col justify-between overflow-y-auto">
       <div>
         {/* Drawer Header */}
         <div className="flex items-center justify-between pb-4 border-b border-slate-800">
@@ -37,13 +46,13 @@ export const TelemetryDrawer: React.FC<TelemetryDrawerProps> = ({
             <Layers className="w-3.5 h-3.5" />
             <span>Emotion Engine Independence</span>
           </div>
-          Signals are derived per modality, fused by the independent Emotion Engine, and passed as controlled context to the RLPI layer.
+          NLP sentiment, voice prosody, and face expression feed decoupled structured signals into the engine to govern RLPI strategy.
         </div>
 
         {/* Dominant Emotion Card */}
         <div className="mt-4 p-4 rounded-xl glass-card border border-slate-800">
           <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
-            Dominant State
+            Dominant Fused State
           </span>
           <div className="mt-2 flex items-center justify-between">
             <span
@@ -101,6 +110,95 @@ export const TelemetryDrawer: React.FC<TelemetryDrawerProps> = ({
           </div>
         </div>
 
+        {/* Phase 5 Text NLP Emotion & Intent Card */}
+        {lastTextSignal && (
+          <div className="mt-4 p-3.5 rounded-xl bg-slate-900/60 border border-slate-800 text-xs">
+            <div className="flex items-center justify-between font-semibold text-slate-200 mb-2">
+              <span className="flex items-center space-x-1.5">
+                <MessageSquare className="w-3.5 h-3.5 text-indigo-400" />
+                <span>Text NLP Signals</span>
+              </span>
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-300 border border-indigo-500/20">
+                {lastTextSignal.intent}
+              </span>
+            </div>
+
+            <div className="space-y-1.5 text-[11px] text-slate-400">
+              <div className="flex justify-between items-center">
+                <span>Sentiment Valence:</span>
+                <span
+                  className={`font-mono font-semibold ${
+                    lastTextSignal.sentiment_score > 0.1
+                      ? "text-emerald-400"
+                      : lastTextSignal.sentiment_score < -0.1
+                      ? "text-rose-400"
+                      : "text-slate-300"
+                  }`}
+                >
+                  {lastTextSignal.sentiment_score > 0 ? "+" : ""}
+                  {lastTextSignal.sentiment_score.toFixed(2)}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span>Confidence:</span>
+                <span className="text-slate-200 font-mono">
+                  {Math.round(lastTextSignal.confidence * 100)}%
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span>Language:</span>
+                <span className="text-slate-300 uppercase font-mono text-[10px]">
+                  {lastTextSignal.detected_language}
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Phase 5 Voice Acoustic Prosody Card */}
+        {lastVoiceSignal && (
+          <div className="mt-4 p-3.5 rounded-xl bg-slate-900/60 border border-slate-800 text-xs">
+            <div className="flex items-center justify-between font-semibold text-slate-200 mb-2">
+              <span className="flex items-center space-x-1.5">
+                <Volume2 className="w-3.5 h-3.5 text-purple-400" />
+                <span>Voice Prosody Signals</span>
+              </span>
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-purple-500/10 text-purple-300 border border-purple-500/20 uppercase">
+                {lastVoiceSignal.energy_level} energy
+              </span>
+            </div>
+
+            <div className="space-y-1.5 text-[11px] text-slate-400">
+              <div className="flex justify-between items-center">
+                <span>Pitch (F0):</span>
+                <span className="text-slate-200 font-mono">
+                  {lastVoiceSignal.acoustic_features.pitch_hz > 0
+                    ? `${Math.round(lastVoiceSignal.acoustic_features.pitch_hz)} Hz`
+                    : "Unvoiced"}
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span>RMS Energy:</span>
+                <span className="text-slate-200 font-mono">
+                  {lastVoiceSignal.acoustic_features.rms_energy.toFixed(3)}
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span>Speaking Rate:</span>
+                <span className="text-slate-200 capitalize font-mono">
+                  {lastVoiceSignal.speaking_rate}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span>Confidence:</span>
+                <span className="text-slate-200 font-mono">
+                  {Math.round(lastVoiceSignal.confidence * 100)}%
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Phase 4 Computer Vision Derived Signals Card */}
         {lastVisionSignal && (
           <div className="mt-4 p-3.5 rounded-xl bg-slate-900/60 border border-slate-800 text-xs">
@@ -155,12 +253,27 @@ export const TelemetryDrawer: React.FC<TelemetryDrawerProps> = ({
 
         {/* Modality Provenance */}
         <div className="mt-5">
-          <h3 className="text-xs font-semibold text-slate-300 mb-2.5">Active Signal Sources</h3>
+          <h3 className="text-xs font-semibold text-slate-300 mb-2.5 flex items-center space-x-1.5">
+            <Activity className="w-3.5 h-3.5 text-indigo-400" />
+            <span>Active Signal Sources</span>
+          </h3>
           <div className="space-y-2">
             {[
-              { id: "text", name: "Text Sentiment & Intent", enabled: emotionalState.sources.includes("text") },
-              { id: "voice", name: "Voice Acoustic Prosody", enabled: emotionalState.sources.includes("voice") },
-              { id: "face", name: "Facial Expression Vision", enabled: emotionalState.sources.includes("face") },
+              {
+                id: "text",
+                name: "Text Sentiment & Intent",
+                enabled: !!lastTextSignal || emotionalState.sources.includes("text"),
+              },
+              {
+                id: "voice",
+                name: "Voice Acoustic Prosody",
+                enabled: !!lastVoiceSignal || emotionalState.sources.includes("voice"),
+              },
+              {
+                id: "face",
+                name: "Facial Expression Vision",
+                enabled: !!lastVisionSignal || emotionalState.sources.includes("face"),
+              },
             ].map((source) => (
               <div
                 key={source.id}
