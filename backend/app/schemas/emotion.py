@@ -43,3 +43,36 @@ class VoiceEmotionResponse(BaseModel):
         default_factory=lambda: datetime.now(timezone.utc),
         description="Signal extraction timestamp"
     )
+
+# --- Multimodal Emotion Fusion Schemas (Phase 6) ---
+
+class EmotionalState(BaseModel):
+    dominant_emotion: str = Field(
+        ...,
+        description="Dominant emotion category: neutral, happy, sad, angry, bored, surprised, confused"
+    )
+    probabilities: Dict[str, float] = Field(
+        ...,
+        description="Normalized probability distribution over all emotion categories"
+    )
+    confidence: float = Field(..., ge=0.0, le=1.0, description="Overall confidence of the fused emotional state")
+    intensity: float = Field(..., ge=0.0, le=1.0, description="Emotional intensity / arousal from 0.0 to 1.0")
+    uncertainty: float = Field(..., ge=0.0, le=1.0, description="Degree of uncertainty or conflict from 0.0 to 1.0")
+    sources: list[str] = Field(..., description="Active contributing modalities: ['text', 'voice', 'face']")
+    modality_status: Dict[str, bool] = Field(..., description="Availability status per modality")
+    timestamp: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        description="Timestamp of the fused emotional state"
+    )
+
+class MultimodalFusionRequest(BaseModel):
+    text_signal: Optional[TextEmotionResponse] = Field(None, description="NLP intent and sentiment signal")
+    voice_signal: Optional[VoiceEmotionResponse] = Field(None, description="Voice acoustic prosody signal")
+    face_signal: Optional[Any] = Field(None, description="Facial vision and expression signal")
+    session_id: Optional[str] = Field(None, description="Associated conversation session ID")
+    previous_state: Optional[EmotionalState] = Field(None, description="Prior emotional state for temporal smoothing")
+    persist: bool = Field(False, description="Whether to persist the fused event to PostgreSQL")
+
+class MultimodalFusionResponse(EmotionalState):
+    event_id: Optional[str] = Field(None, description="Database event ID if persisted")
+

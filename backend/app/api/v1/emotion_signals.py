@@ -1,16 +1,21 @@
 import base64
 import logging
 from typing import Optional
-from fastapi import APIRouter, Request, HTTPException, status, UploadFile, File
+from fastapi import APIRouter, Request, HTTPException, status, UploadFile, File, Depends
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from backend.app.api.deps import get_db
 from backend.app.schemas.emotion import (
     TextEmotionRequest,
     TextEmotionResponse,
     VoiceEmotionRequest,
     VoiceEmotionResponse,
+    MultimodalFusionRequest,
+    MultimodalFusionResponse,
 )
 from backend.app.services.emotion.nlp_signals import NLPTextSignalService
 from backend.app.services.speech.prosody import VoiceProsodyService
+from backend.app.services.emotion.engine import emotion_engine
 
 router = APIRouter()
 logger = logging.getLogger("ai_companion.api.emotion_signals")
@@ -93,3 +98,25 @@ async def extract_voice_emotion(
         )
     finally:
         del audio_bytes
+
+
+@router.post(
+    "/emotion/fuse",
+    response_model=MultimodalFusionResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Fuse multimodal signals into normalized emotional state",
+    description="Fuses independent text NLP, voice prosody, and face expression signals with confidence, uncertainty, and modality provenance."
+)
+async def fuse_multimodal_emotions(
+    payload: MultimodalFusionRequest,
+    db: AsyncSession = Depends(get_db),
+) -> MultimodalFusionResponse:
+    try:
+        return await emotion_engine.fuse(request=payload, db=db)
+    except Exception as exc:
+        logger.error(f"Multimodal emotion fusion failed: {exc}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Multimodal emotion fusion failed: {str(exc)}",
+        )
+

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Header } from "./components/Header";
 import { ModalityControls } from "./components/ModalityControls";
 import { CompanionAvatar } from "./components/CompanionAvatar";
@@ -15,6 +15,8 @@ import type {
   EmotionalState,
   UserPreferences,
   TextEmotionResponse,
+  VoiceEmotionResponse,
+  VisionSignalResponse,
 } from "./types";
 
 export const App: React.FC = () => {
@@ -58,7 +60,7 @@ export const App: React.FC = () => {
     stopCamera,
   } = useVision();
 
-  // Normalized emotional state
+  // Normalized emotional state (fused by Emotion Engine)
   const isCameraActive = cameraStatus.active && cameraStatus.permission === "granted";
   const [emotionalState, setEmotionalState] = useState<EmotionalState>({
     dominant_emotion: "neutral",
@@ -73,7 +75,7 @@ export const App: React.FC = () => {
     },
     confidence: 0.88,
     intensity: 0.45,
-    sources: ["text", "voice", "face"],
+    sources: ["text"],
     timestamp: new Date().toISOString(),
     modality_status: {
       text: true,
@@ -83,16 +85,54 @@ export const App: React.FC = () => {
     uncertainty: 0.12,
   });
 
+  // Multimodal Emotion Fusion (Phase 6)
+  const fuseSignals = async (
+    textSig: TextEmotionResponse | null = lastTextSignal,
+    voiceSig: VoiceEmotionResponse | null = lastVoiceSignal,
+    faceSig: VisionSignalResponse | null = lastVisionSignal
+  ) => {
+    if (!textSig && !voiceSig && !faceSig) return;
+
+    try {
+      const fused = await api.fuseEmotions({
+        text_signal: textSig,
+        voice_signal: voiceSig,
+        face_signal: faceSig,
+        session_id: sessionId,
+        previous_state: emotionalState,
+        persist: preferences.emotionStorageEnabled,
+      });
+
+      setEmotionalState(fused);
+    } catch (err) {
+      console.warn("Multimodal emotion fusion error:", err);
+    }
+  };
+
+  // Re-fuse when facial vision signal changes
+  useEffect(() => {
+    if (lastVisionSignal && isCameraActive) {
+      fuseSignals(lastTextSignal, lastVoiceSignal, lastVisionSignal);
+    }
+  }, [lastVisionSignal, isCameraActive]);
+
+  // Re-fuse when voice prosody signal changes
+  useEffect(() => {
+    if (lastVoiceSignal) {
+      fuseSignals(lastTextSignal, lastVoiceSignal, lastVisionSignal);
+    }
+  }, [lastVoiceSignal]);
+
   // Welcome announcement message
   const [messages, setMessages] = useState<Message[]>([
     {
-      id: "welcome-phase-5",
+      id: "welcome-phase-6",
       role: "assistant",
       content:
-        "Hello! I am your AI Companion. Phase 5 — Text and Voice Signals is active.\n\n" +
-        "• Text NLP Extraction: Sentiment valence (-1.0 to +1.0) and intent classification are derived from every message.\n" +
-        "• Voice Acoustic Prosody: Pitch (F0), RMS energy, tempo, and speaking rate are extracted from voice input in-memory.\n" +
-        "• Emotion Engine Independence: Modality signals remain decoupled and are inspected live in the Emotion Telemetry drawer.",
+        "Hello! I am your AI Companion. Phase 6 — Emotion Engine & Multimodal Signal Fusion is active.\n\n" +
+        "• Decoupled Fusion: Text sentiment/intent, voice prosody (pitch & energy), and camera facial expressions are fused via the independent Emotion Engine.\n" +
+        "• Normalized Emotional State: Real-time probabilities, confidence, arousal intensity, and uncertainty metrics are computed with temporal smoothing.\n" +
+        "• Multimodal Provenance: Active modality sources are tracked and verified live in the Emotion Telemetry drawer.",
       timestamp: new Date().toISOString(),
       emotional_state: {
         dominant_emotion: "neutral",
@@ -115,7 +155,7 @@ export const App: React.FC = () => {
     setIsGenerating(true);
 
     try {
-      // Analyze text sentiment & intent concurrently with LLM response (Phase 5)
+      // Analyze text sentiment & intent concurrently with LLM response
       const [chatResult, textEmotionResult] = await Promise.allSettled([
         api.sendMessage(text, sessionId || undefined),
         api.analyzeTextEmotion(text, preferences.language),
@@ -123,6 +163,8 @@ export const App: React.FC = () => {
 
       if (textEmotionResult.status === "fulfilled") {
         setLastTextSignal(textEmotionResult.value);
+        // Fuse new text signal with existing modalities (Phase 6)
+        fuseSignals(textEmotionResult.value, lastVoiceSignal, lastVisionSignal);
       }
 
       if (chatResult.status === "fulfilled") {

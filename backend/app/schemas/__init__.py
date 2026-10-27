@@ -24,6 +24,9 @@ from backend.app.schemas.emotion import (
     TextEmotionResponse,
     VoiceEmotionRequest,
     VoiceEmotionResponse,
+    EmotionalState,
+    MultimodalFusionRequest,
+    MultimodalFusionResponse,
 )
 
 __all__ = [
@@ -48,4 +51,7 @@ __all__ = [
     "TextEmotionResponse",
     "VoiceEmotionRequest",
     "VoiceEmotionResponse",
+    "EmotionalState",
+    "MultimodalFusionRequest",
+    "MultimodalFusionResponse",
 ]

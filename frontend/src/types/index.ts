@@ -125,6 +125,19 @@ export interface VoiceEmotionResponse {
   timestamp: string;
 }
 
+export interface MultimodalFusionRequest {
+  text_signal?: TextEmotionResponse | null;
+  voice_signal?: VoiceEmotionResponse | null;
+  face_signal?: VisionSignalResponse | null;
+  session_id?: string | null;
+  previous_state?: EmotionalState | null;
+  persist?: boolean;
+}
+
+export interface MultimodalFusionResponse extends EmotionalState {
+  event_id?: string | null;
+}
+
 export interface HealthStatus {
   status: "ok" | "degraded" | "down" | "connecting";
   app_name: string;

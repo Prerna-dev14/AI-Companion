@@ -7,6 +7,8 @@ import type {
   VisionSignalResponse,
   TextEmotionResponse,
   VoiceEmotionResponse,
+  MultimodalFusionRequest,
+  MultimodalFusionResponse,
 } from "../types";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
@@ -194,6 +196,27 @@ class ApiService {
 
     if (!response.ok) {
       throw new Error(`Voice prosody analysis failed with status ${response.status}`);
+    }
+
+    return response.json();
+  }
+
+  /**
+   * Fuses active multimodal signals (text, voice, face) via the independent
+   * Emotion Engine into a normalized EmotionalState (Phase 6).
+   */
+  async fuseEmotions(request: MultimodalFusionRequest): Promise<MultimodalFusionResponse> {
+    const response = await fetch(`${this.baseUrl}/api/emotion/fuse`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+      },
+      body: JSON.stringify(request),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Multimodal emotion fusion failed with status ${response.status}`);
     }
 
     return response.json();
