@@ -14,6 +14,11 @@ from backend.app.schemas.speech import (
     SynthesisRequest,
     SynthesisResponse,
 )
+from backend.app.schemas.vision import (
+    VisionSignalResponse,
+    Base64VisionPayload,
+    BoundingBox,
+)
 
 __all__ = [
     "HealthResponse",
@@ -30,4 +35,7 @@ __all__ = [
     "TranscriptionResponse",
     "SynthesisRequest",
     "SynthesisResponse",
+    "VisionSignalResponse",
+    "Base64VisionPayload",
+    "BoundingBox",
 ]

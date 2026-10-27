@@ -76,6 +76,29 @@ export interface SynthesisRequest {
   voice?: string;
 }
 
+export interface BoundingBox {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+export interface VisionSignalResponse {
+  face_detected: boolean;
+  face_count: number;
+  status: "ok" | "no_face" | "multiple_faces" | "poor_lighting" | "low_confidence";
+  confidence: number;
+  lighting_score: number;
+  facial_features?: {
+    smile_ratio?: number;
+    eye_openness?: number;
+    face_coverage?: number;
+  } | null;
+  expression_signals?: Record<string, number> | null;
+  bounding_box?: BoundingBox | null;
+  timestamp: string;
+}
+
 export interface HealthStatus {
   status: "ok" | "degraded" | "down" | "connecting";
   app_name: string;

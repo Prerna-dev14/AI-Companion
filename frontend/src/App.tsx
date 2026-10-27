@@ -4,14 +4,15 @@ import { ModalityControls } from "./components/ModalityControls";
 import { CompanionAvatar } from "./components/CompanionAvatar";
 import { ChatArea } from "./components/ChatArea";
 import { TelemetryDrawer } from "./components/TelemetryDrawer";
+import { CameraPreview } from "./components/CameraPreview";
 import { SettingsModal } from "./components/SettingsModal";
 import { useHealth } from "./hooks/useHealth";
 import { useSpeech } from "./hooks/useSpeech";
+import { useVision } from "./hooks/useVision";
 import { api } from "./services/api";
 import type {
   Message,
   EmotionalState,
-  ModalityStatus,
   UserPreferences,
 } from "./types";
 
@@ -26,13 +27,13 @@ export const App: React.FC = () => {
   const [preferences, setPreferences] = useState<UserPreferences>({
     language: "en",
     voiceAutoPlay: true,
-    cameraAnalysisEnabled: false,
+    cameraAnalysisEnabled: true,
     microphoneAnalysisEnabled: true,
     longTermMemoryEnabled: false,
     emotionStorageEnabled: false,
   });
 
-  // Speech custom hook for Phase 3
+  // Speech custom hook (Phase 3)
   const {
     micStatus,
     isRecording,
@@ -44,14 +45,18 @@ export const App: React.FC = () => {
     speakText,
   } = useSpeech(preferences.language);
 
-  // Modality state for camera
-  const [cameraStatus, setCameraStatus] = useState<ModalityStatus>({
-    available: true,
-    active: false,
-    permission: "prompt",
-  });
+  // Vision custom hook (Phase 4)
+  const {
+    cameraStatus,
+    videoRef,
+    lastSignal: lastVisionSignal,
+    isAnalyzing: isAnalyzingVision,
+    toggleCamera,
+    stopCamera,
+  } = useVision();
 
   // Normalized emotional state
+  const isCameraActive = cameraStatus.active && cameraStatus.permission === "granted";
   const [emotionalState, setEmotionalState] = useState<EmotionalState>({
     dominant_emotion: "neutral",
     probabilities: {
@@ -65,26 +70,26 @@ export const App: React.FC = () => {
     },
     confidence: 0.88,
     intensity: 0.45,
-    sources: ["text", "voice"],
+    sources: ["text", "voice", "face"],
     timestamp: new Date().toISOString(),
     modality_status: {
       text: true,
       voice: micStatus.permission === "granted",
-      face: false,
+      face: isCameraActive,
     },
     uncertainty: 0.12,
   });
 
-  // Initial welcome message
+  // Welcome announcement message
   const [messages, setMessages] = useState<Message[]>([
     {
-      id: "welcome-phase-3",
+      id: "welcome-phase-4",
       role: "assistant",
       content:
-        "Hello! I am your AI Companion. Phase 3 — Speech AI is active.\n\n" +
-        "• Voice Interaction: You can speak directly using the microphone, and I will transcribe and respond.\n" +
-        "• Spoken Audio (TTS): Click 'Speak' on any message, or enable Auto-Play in Settings to hear spoken replies.\n" +
-        "• Privacy Assurance: Audio is processed in memory and immediately discarded. Raw voice recordings are never stored.",
+        "Hello! I am your AI Companion. Phase 4 — Computer Vision Signals is active.\n\n" +
+        "• Camera Vision Signals: Click 'Camera' to enable optional, permission-gated face detection and lighting analysis.\n" +
+        "• Privacy Assurance: Frames are processed strictly in-memory and discarded immediately. No raw frames or face biometric identities are stored.\n" +
+        "• Resilient Fallback: If camera access is denied or lighting is poor, conversation continues seamlessly in text and voice.",
       timestamp: new Date().toISOString(),
       emotional_state: {
         dominant_emotion: "neutral",
@@ -170,16 +175,11 @@ export const App: React.FC = () => {
   };
 
   const handleToggleCamera = () => {
-    if (cameraStatus.permission === "prompt") {
-      setCameraStatus({
-        available: true,
-        active: true,
-        permission: "granted",
-      });
-      setPreferences((p) => ({ ...p, cameraAnalysisEnabled: true }));
-    } else {
-      setCameraStatus((c) => ({ ...c, active: !c.active }));
-    }
+    toggleCamera();
+    setEmotionalState((prev) => ({
+      ...prev,
+      modality_status: { ...prev.modality_status, face: !cameraStatus.active },
+    }));
   };
 
   const handleClearSession = async () => {
@@ -206,7 +206,7 @@ export const App: React.FC = () => {
       />
 
       {/* Main Workspace Area */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex overflow-hidden relative">
         {/* Central Companion & Chat Layout */}
         <div className="flex-1 flex flex-col h-full overflow-hidden">
           {/* Top Modality Controls Bar */}
@@ -253,8 +253,18 @@ export const App: React.FC = () => {
           <TelemetryDrawer
             emotionalState={emotionalState}
             onClose={() => setShowTelemetry(false)}
+            lastVisionSignal={lastVisionSignal}
           />
         )}
+
+        {/* Floating In-Memory Camera Preview (Phase 4) */}
+        <CameraPreview
+          videoRef={videoRef}
+          isActive={cameraStatus.active}
+          onClose={stopCamera}
+          lastSignal={lastVisionSignal}
+          isAnalyzing={isAnalyzingVision}
+        />
       </div>
 
       {/* Settings Modal */}

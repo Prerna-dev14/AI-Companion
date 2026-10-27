@@ -1,16 +1,18 @@
 import React from "react";
-import { Cpu, ShieldCheck, Layers, X } from "lucide-react";
-import type { EmotionalState } from "../types";
+import { Cpu, ShieldCheck, Layers, X, Camera, Sun } from "lucide-react";
+import type { EmotionalState, VisionSignalResponse } from "../types";
 import { formatPercentage, getEmotionColor } from "../utils/formatters";
 
 interface TelemetryDrawerProps {
   emotionalState: EmotionalState;
   onClose: () => void;
+  lastVisionSignal?: VisionSignalResponse | null;
 }
 
 export const TelemetryDrawer: React.FC<TelemetryDrawerProps> = ({
   emotionalState,
   onClose,
+  lastVisionSignal,
 }) => {
   return (
     <aside className="w-80 border-l border-slate-800 bg-slate-950/70 backdrop-blur-xl p-5 flex flex-col justify-between overflow-y-auto">
@@ -98,6 +100,58 @@ export const TelemetryDrawer: React.FC<TelemetryDrawerProps> = ({
             </div>
           </div>
         </div>
+
+        {/* Phase 4 Computer Vision Derived Signals Card */}
+        {lastVisionSignal && (
+          <div className="mt-4 p-3.5 rounded-xl bg-slate-900/60 border border-slate-800 text-xs">
+            <div className="flex items-center justify-between font-semibold text-slate-200 mb-2">
+              <span className="flex items-center space-x-1.5">
+                <Camera className="w-3.5 h-3.5 text-cyan-400" />
+                <span>Facial Vision Signals</span>
+              </span>
+              <span
+                className={`text-[9px] uppercase px-1.5 py-0.2 rounded font-bold ${
+                  lastVisionSignal.face_detected
+                    ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30"
+                    : "bg-amber-500/10 text-amber-400 border border-amber-500/30"
+                }`}
+              >
+                {lastVisionSignal.status}
+              </span>
+            </div>
+
+            <div className="space-y-1.5 text-[11px] text-slate-400">
+              <div className="flex justify-between">
+                <span>Face Presence:</span>
+                <span className="text-slate-200 font-medium">
+                  {lastVisionSignal.face_detected
+                    ? `Detected (${lastVisionSignal.face_count} face)`
+                    : "No face detected"}
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="flex items-center space-x-1">
+                  <Sun className="w-3 h-3 text-amber-400" />
+                  <span>Lighting Quality:</span>
+                </span>
+                <span className="text-slate-200 font-mono">
+                  {Math.round(lastVisionSignal.lighting_score * 100)}%
+                </span>
+              </div>
+
+              {lastVisionSignal.facial_features && (
+                <div className="pt-1.5 border-t border-slate-800 grid grid-cols-2 gap-1 text-[10px] font-mono text-slate-300">
+                  <div>
+                    Smile: {Math.round((lastVisionSignal.facial_features.smile_ratio || 0) * 100)}%
+                  </div>
+                  <div>
+                    Eyes: {Math.round((lastVisionSignal.facial_features.eye_openness || 0) * 100)}%
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Modality Provenance */}
         <div className="mt-5">

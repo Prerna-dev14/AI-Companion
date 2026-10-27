@@ -1,4 +1,11 @@
-import type { HealthStatus, ChatResponse, Session, Message, TranscriptionResponse } from "../types";
+import type {
+  HealthStatus,
+  ChatResponse,
+  Session,
+  Message,
+  TranscriptionResponse,
+  VisionSignalResponse,
+} from "../types";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
@@ -124,6 +131,26 @@ class ApiService {
     }
 
     return response.blob();
+  }
+
+  /**
+   * Analyzes an in-memory webcam frame to extract anonymous face signals.
+   * Raw frames are never retained.
+   */
+  async analyzeFace(imageBlob: Blob): Promise<VisionSignalResponse> {
+    const formData = new FormData();
+    formData.append("file", imageBlob, "frame.jpg");
+
+    const response = await fetch(`${this.baseUrl}/api/emotion/face`, {
+      method: "POST",
+      body: formData,
+    });
+
+    if (!response.ok) {
+      throw new Error(`Vision facial analysis failed with status ${response.status}`);
+    }
+
+    return response.json();
   }
 
   /**

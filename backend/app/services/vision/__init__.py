@@ -1,8 +1,13 @@
-"""Vision Service Module.
-Handles face detection and facial expression signal estimation.
-To be expanded in Phase 4.
-"""
+from backend.app.services.vision.adapters import (
+    BaseVisionAdapter,
+    OpenCVMediaPipeVisionAdapter,
+    FallbackVisionAdapter,
+    get_vision_adapter,
+)
 
-class BaseVisionAdapter:
-    """Base interface for computer vision signals."""
-    pass
+__all__ = [
+    "BaseVisionAdapter",
+    "OpenCVMediaPipeVisionAdapter",
+    "FallbackVisionAdapter",
+    "get_vision_adapter",
+]

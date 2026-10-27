@@ -10,7 +10,13 @@ from backend.app.core.logging import setup_logging
 from backend.app.database.session import engine
 from backend.app.database.base import Base
 import backend.app.models  # Ensure all SQLAlchemy models are registered
-from backend.app.api.v1 import api_v1_router, chat_router, sessions_router, speech_router
+from backend.app.api.v1 import (
+    api_v1_router,
+    chat_router,
+    sessions_router,
+    speech_router,
+    vision_router,
+)
 from backend.app.api.v1.health import router as health_router
 from backend.app.schemas.common import ApiErrorResponse
 
@@ -96,11 +102,13 @@ async def generic_exception_handler(request: Request, exc: Exception):
 # POST /api/chat
 # POST /api/speech/transcribe
 # POST /api/speech/synthesize
+# POST /api/emotion/face
 # GET/POST /api/sessions
 app.include_router(health_router, prefix="/api")
 app.include_router(chat_router, prefix="/api")
 app.include_router(sessions_router, prefix="/api")
 app.include_router(speech_router, prefix="/api")
+app.include_router(vision_router, prefix="/api")
 
 # API v1 routes
 app.include_router(api_v1_router, prefix=settings.API_V1_STR)
@@ -117,5 +125,8 @@ async def root():
         "speech": {
             "transcribe": "/api/speech/transcribe",
             "synthesize": "/api/speech/synthesize",
+        },
+        "vision": {
+            "face": "/api/emotion/face",
         },
     }
