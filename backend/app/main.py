@@ -18,9 +18,11 @@ from backend.app.api.v1 import (
     vision_router,
     emotion_signals_router,
     memory_router,
+    audit_router,
 )
 from backend.app.api.v1.health import router as health_router
 from backend.app.schemas.common import ApiErrorResponse
+from backend.app.core.rate_limit import RateLimitMiddleware
 
 logger = setup_logging()
 
@@ -60,6 +62,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Rate Limiting Middleware (Phase 9)
+app.add_middleware(RateLimitMiddleware)
 
 # Centralized Error Handlers
 @app.exception_handler(StarletteHTTPException)
@@ -115,6 +120,7 @@ app.include_router(speech_router, prefix="/api")
 app.include_router(vision_router, prefix="/api")
 app.include_router(emotion_signals_router, prefix="/api")
 app.include_router(memory_router, prefix="/api")
+app.include_router(audit_router, prefix="/api")
 
 # API v1 routes
 app.include_router(api_v1_router, prefix=settings.API_V1_STR)
@@ -140,4 +146,5 @@ async def root():
         },
         "memory": "/api/memory",
         "consents": "/api/consents",
+        "audit": "/api/audit/events",
     }

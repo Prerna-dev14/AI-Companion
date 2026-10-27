@@ -76,43 +76,75 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                 {isUser ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
               </div>
 
-              {/* Message Bubble */}
-              <div
-                className={`rounded-2xl px-4 py-3 text-sm leading-relaxed ${
-                  isUser
-                    ? "bg-indigo-600 text-white rounded-tr-none shadow-lg shadow-indigo-600/20"
-                    : "glass-card text-slate-200 rounded-tl-none border border-slate-800/80"
-                }`}
-              >
-                <div className="whitespace-pre-wrap">{message.content}</div>
+                {/* Message Bubble */}
+                <div
+                  className={`rounded-2xl px-4 py-3 text-sm leading-relaxed ${
+                    isUser
+                      ? "bg-indigo-600 text-white rounded-tr-none shadow-lg shadow-indigo-600/20"
+                      : message.metadata_payload?.safety_triggered
+                      ? "bg-slate-900/90 text-slate-200 rounded-tl-none border-2 border-rose-500/60 shadow-lg shadow-rose-950/40"
+                      : "glass-card text-slate-200 rounded-tl-none border border-slate-800/80"
+                  }`}
+                >
+                  {message.metadata_payload?.safety_triggered && (
+                    <div className="mb-2.5 pb-2 border-b border-rose-500/30 flex items-center space-x-2 text-rose-400 font-semibold text-xs">
+                      <span>🛡️ Immediate Crisis Support & Helplines (Free & Confidential)</span>
+                    </div>
+                  )}
 
-                {/* Metadata & Actions */}
-                <div className="mt-2 flex items-center justify-between text-[10px] opacity-80 pt-1 border-t border-slate-700/40">
-                  <div className="flex items-center space-x-2">
-                    {!isUser && onSpeakMessage && (
-                      <button
-                        onClick={() => onSpeakMessage(message.content)}
-                        className="hover:text-cyan-300 transition-colors flex items-center space-x-1"
-                        title="Listen to spoken response (TTS)"
-                      >
-                        <Volume2 className="w-3.5 h-3.5" />
-                        <span>Speak</span>
-                      </button>
-                    )}
-                  </div>
+                  <div className="whitespace-pre-wrap">{message.content}</div>
 
-                  <div className="flex items-center space-x-2">
-                    {message.emotional_state?.dominant_emotion && (
-                      <span
-                        className={`capitalize px-1.5 py-0.2 rounded border ${getEmotionColor(
-                          message.emotional_state.dominant_emotion
-                        )}`}
+                  {message.metadata_payload?.safety_triggered && (
+                    <div className="mt-3 pt-2.5 border-t border-rose-500/20 flex flex-wrap gap-2">
+                      <a
+                        href="tel:988"
+                        className="px-2.5 py-1 rounded-lg bg-rose-500/20 border border-rose-500/40 text-rose-300 font-medium text-[11px] hover:bg-rose-500/30 transition-colors"
                       >
-                        {message.emotional_state.dominant_emotion}
-                      </span>
-                    )}
-                    <span>{formatTime(message.timestamp)}</span>
-                  </div>
+                        📞 Call or Text 988
+                      </a>
+                      <a
+                        href="https://findahelpline.com"
+                        target="_blank"
+                        rel="noreferrer"
+                        className="px-2.5 py-1 rounded-lg bg-slate-800 border border-slate-700 text-slate-300 text-[11px] hover:bg-slate-700 transition-colors"
+                      >
+                        🌐 International Helplines
+                      </a>
+                    </div>
+                  )}
+
+                  {/* Metadata & Actions */}
+                  <div className="mt-2 flex items-center justify-between text-[10px] opacity-80 pt-1 border-t border-slate-700/40">
+                    <div className="flex items-center space-x-2">
+                      {!isUser && onSpeakMessage && (
+                        <button
+                          onClick={() => onSpeakMessage(message.content)}
+                          className="hover:text-cyan-300 transition-colors flex items-center space-x-1"
+                          title="Listen to spoken response (TTS)"
+                        >
+                          <Volume2 className="w-3.5 h-3.5" />
+                          <span>Speak</span>
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="flex items-center space-x-2">
+                      {message.metadata_payload?.safety_triggered && (
+                        <span className="px-1.5 py-0.2 rounded bg-rose-500/20 text-rose-300 border border-rose-500/30 uppercase font-mono text-[9px]">
+                          Safety Grounding
+                        </span>
+                      )}
+                      {message.emotional_state?.dominant_emotion && (
+                        <span
+                          className={`capitalize px-1.5 py-0.2 rounded border ${getEmotionColor(
+                            message.emotional_state.dominant_emotion
+                          )}`}
+                        >
+                          {message.emotional_state.dominant_emotion}
+                        </span>
+                      )}
+                      <span>{formatTime(message.timestamp)}</span>
+                    </div>
                 </div>
               </div>
             </div>

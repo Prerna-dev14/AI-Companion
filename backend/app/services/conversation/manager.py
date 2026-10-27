@@ -94,7 +94,48 @@ class ConversationManager:
         await db.commit()
         await db.refresh(user_msg)
 
-        # 2. Retrieve recent message history for context
+        # 2. High-Risk Safety Intervention Check (Phase 9: Self-harm, crisis & violence defense)
+        from backend.app.services.safety.service import safety_service
+        from backend.app.services.audit.service import audit_service
+
+        safety = safety_service.assess_message(message_text)
+        if not safety.is_safe:
+            # Circuit breaker: immediately bypass LLM generation, log audit event, return crisis intervention
+            await audit_service.record_event(
+                db=db,
+                event_type="SAFETY_INTERVENTION_TRIGGERED",
+                user_id=session.user_id,
+                details={
+                    "category": safety.category,
+                    "matched_phrase": safety.matched_phrase,
+                    "session_id": session.id,
+                },
+            )
+            assistant_msg = Message(
+                session_id=session.id,
+                role="assistant",
+                content=safety.intervention_text or "Please reach out to 988 for support.",
+                metadata_payload={
+                    "response_strategy": "safety_crisis_intervention",
+                    "safety_triggered": True,
+                    "safety_category": safety.category,
+                    "resources": safety.resources,
+                    "model_name": "safety_circuit_breaker",
+                },
+            )
+            db.add(assistant_msg)
+            await db.commit()
+            await db.refresh(assistant_msg)
+
+            return ChatResponse(
+                session_id=session.id,
+                message=MessageResponse.model_validate(assistant_msg),
+                response_strategy="safety_crisis_intervention",
+                model_name="safety_circuit_breaker",
+                created_at=assistant_msg.created_at,
+            )
+
+        # 3. Retrieve recent message history for context
         res = await db.execute(
             select(Message)
             .where(Message.session_id == session.id)

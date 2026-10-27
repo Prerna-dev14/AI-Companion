@@ -91,6 +91,16 @@ class MemoryService:
         await db.commit()
         await db.refresh(consent)
         logger.info(f"User {user_id} consent for '{scope}' set to {granted}")
+
+        # Record audit event (Phase 9)
+        from backend.app.services.audit.service import audit_service
+        await audit_service.record_event(
+            db=db,
+            event_type="CONSENT_GRANTED" if granted else "CONSENT_REVOKED",
+            user_id=user_id,
+            details={"scope": scope, "granted": granted},
+        )
+
         return consent
 
     # --- Long-Term Memory Management ---
@@ -117,6 +127,16 @@ class MemoryService:
         await db.commit()
         await db.refresh(memory)
         logger.info(f"Created memory item {memory.id} for user {user_id}")
+
+        # Record audit event (Phase 9)
+        from backend.app.services.audit.service import audit_service
+        await audit_service.record_event(
+            db=db,
+            event_type="MEMORY_CREATED",
+            user_id=user_id,
+            details={"memory_id": memory.id, "category": category},
+        )
+
         return memory
 
     async def list_memories(
@@ -153,6 +173,16 @@ class MemoryService:
         await db.delete(memory)
         await db.commit()
         logger.info(f"Deleted memory item {memory_id} for user {user_id}")
+
+        # Record audit event (Phase 9)
+        from backend.app.services.audit.service import audit_service
+        await audit_service.record_event(
+            db=db,
+            event_type="MEMORY_DELETED",
+            user_id=user_id,
+            details={"memory_id": memory_id},
+        )
+
         return True
 
     async def clear_all_memories(
@@ -167,6 +197,16 @@ class MemoryService:
         await db.commit()
         count = res.rowcount
         logger.info(f"Cleared all ({count}) memory items for user {user_id}")
+
+        # Record audit event (Phase 9)
+        from backend.app.services.audit.service import audit_service
+        await audit_service.record_event(
+            db=db,
+            event_type="MEMORY_PURGED_ALL",
+            user_id=user_id,
+            details={"purged_count": count},
+        )
+
         return count
 
     async def get_active_memory_context(

@@ -36,12 +36,18 @@ from backend.app.schemas.memory import (
     EmotionEventItem,
     EmotionHistoryResponse,
 )
+from backend.app.schemas.audit import (
+    AuditEventResponse,
+    AuditEventListResponse,
+)
 
 __all__ = [
     "HealthResponse",
     "DatabaseStatus",
     "ApiResponse",
     "ApiErrorResponse",
+    "AuditEventResponse",
+    "AuditEventListResponse",
     "ChatRequest",
     "ChatResponse",
     "MessageCreate",

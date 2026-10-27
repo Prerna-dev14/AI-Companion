@@ -416,6 +416,24 @@ class ApiService {
     }
   }
 
+  /**
+   * Security & Compliance Audit Events (Phase 9)
+   */
+  async getAuditEvents(eventType?: string, limit: number = 30): Promise<import("../types").AuditEventListResponse> {
+    let url = `${this.baseUrl}/api/audit/events?limit=${limit}`;
+    if (eventType) {
+      url += `&event_type=${encodeURIComponent(eventType)}`;
+    }
+    const response = await fetch(url, {
+      method: "GET",
+      headers: { "Accept": "application/json" },
+    });
+    if (!response.ok) {
+      return { events: [], total: 0 };
+    }
+    return response.json();
+  }
+
   getBaseUrl(): string {
     return this.baseUrl;
   }

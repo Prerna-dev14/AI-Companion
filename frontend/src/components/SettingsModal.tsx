@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { X, Shield, Globe, Trash2, Brain, Plus, Check, AlertCircle } from "lucide-react";
-import type { UserPreferences, MemoryItem, EmotionHistoryResponse } from "../types";
+import { X, Shield, Globe, Trash2, Brain, Plus, Check, AlertCircle, ShieldCheck } from "lucide-react";
+import type { UserPreferences, MemoryItem, EmotionHistoryResponse, AuditEventItem } from "../types";
 import { api } from "../services/api";
 
 interface SettingsModalProps {
@@ -23,13 +23,15 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [newMemoryCategory, setNewMemoryCategory] = useState("preference");
   const [isAddingMemory, setIsAddingMemory] = useState(false);
   const [emotionCount, setEmotionCount] = useState<number>(0);
+  const [auditEvents, setAuditEvents] = useState<AuditEventItem[]>([]);
   const [feedbackMsg, setFeedbackMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
-  // Load memories and emotion history when modal opens
+  // Load memories, emotion history, and audit trail when modal opens
   useEffect(() => {
     if (isOpen) {
       loadMemories();
       loadEmotionStats();
+      loadAuditEvents();
     }
   }, [isOpen]);
 
@@ -53,6 +55,15 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       setEmotionCount(history.total);
     } catch (e) {
       console.warn("Failed to load emotion stats:", e);
+    }
+  };
+
+  const loadAuditEvents = async () => {
+    try {
+      const res = await api.getAuditEvents(undefined, 10);
+      setAuditEvents(res.events);
+    } catch (e) {
+      console.warn("Failed to load audit events:", e);
     }
   };
 
@@ -142,7 +153,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             <Shield className="w-5 h-5 text-indigo-400" />
             <div>
               <h2 className="text-base font-semibold text-white">Privacy & Companion Settings</h2>
-              <p className="text-xs text-slate-400">Phase 8 — Consent-Gated Memory & History</p>
+              <p className="text-xs text-slate-400">Phase 9 — Security, Privacy & Safety Hardening</p>
             </div>
           </div>
           <button
@@ -349,6 +360,41 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 Clear History
               </button>
             )}
+          </div>
+
+          {/* Security & Compliance Audit Log (Phase 9) */}
+          <div>
+            <h3 className="text-xs uppercase font-bold text-slate-400 tracking-wider mb-2 flex items-center space-x-1.5">
+              <ShieldCheck className="w-3.5 h-3.5 text-indigo-400" />
+              <span>Security & Audit Event Trail ({auditEvents.length})</span>
+            </h3>
+            <div className="space-y-1.5 max-h-36 overflow-y-auto p-2.5 rounded-xl bg-slate-900/60 border border-slate-800 text-[11px]">
+              {auditEvents.length === 0 ? (
+                <div className="text-slate-500 py-1">No security audit events recorded yet.</div>
+              ) : (
+                auditEvents.map((evt) => (
+                  <div
+                    key={evt.id}
+                    className="flex items-center justify-between py-1 border-b border-slate-800/60 last:border-0 font-mono"
+                  >
+                    <span
+                      className={`px-1.5 py-0.5 rounded text-[10px] uppercase font-semibold ${
+                        evt.event_type.includes("SAFETY")
+                          ? "bg-rose-500/20 text-rose-300 border border-rose-500/30"
+                          : evt.event_type.includes("CONSENT")
+                          ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
+                          : "bg-indigo-500/20 text-indigo-300 border border-indigo-500/30"
+                      }`}
+                    >
+                      {evt.event_type}
+                    </span>
+                    <span className="text-slate-500 text-[10px]">
+                      {new Date(evt.created_at).toLocaleTimeString()}
+                    </span>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
 
           {/* Language Selection */}

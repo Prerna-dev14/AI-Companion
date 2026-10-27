@@ -146,13 +146,13 @@ export const App: React.FC = () => {
   // Welcome announcement message
   const [messages, setMessages] = useState<Message[]>([
     {
-      id: "welcome-phase-8",
+      id: "welcome-phase-9",
       role: "assistant",
       content:
-        "Hello! I am your AI Companion. Phase 8 — Consent-Gated Memory & History is active.\n\n" +
-        "• Permission-Controlled Long-Term Memory: When explicitly consented, key preferences and context persist across sessions and guide conversational RLPI strategies.\n" +
-        "• Strict Privacy Sovereignty: Without consent, long-term memory creation is strictly rejected (HTTP 403 Forbidden).\n" +
-        "• Right to be Forgotten: Inspect, selectively delete, or completely purge all stored memory items and emotion history at any time in Settings.",
+        "Hello! I am your AI Companion. Phase 9 — Security, Privacy & Safety Hardening is active.\n\n" +
+        "• High-Risk Safety Circuit Breaker: Immediate, non-clinical crisis grounding and vetted lifeline resources (988 Lifeline, Crisis Text Line 741741) automatically intervene on crisis triggers.\n" +
+        "• Rate Limiting & Abuse Defense: In-memory sliding-window request throttling with Retry-After headers safeguards compute-heavy endpoints.\n" +
+        "• Audit Logging & Compliance: Security-critical actions (consent grants, memory purges, safety interventions) are recorded to the immutable audit trail visible in Settings.",
       timestamp: new Date().toISOString(),
       emotional_state: {
         dominant_emotion: "neutral",

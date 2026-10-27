@@ -36,7 +36,14 @@ export interface Message {
   content: string;
   timestamp: string;
   emotional_state?: Partial<EmotionalState>;
-  metadata_payload?: Record<string, unknown>;
+  metadata_payload?: {
+    response_strategy?: string;
+    model_name?: string;
+    safety_triggered?: boolean;
+    safety_category?: string;
+    resources?: Record<string, string>;
+    [key: string]: unknown;
+  };
 }
 
 export interface Session {
@@ -195,5 +202,19 @@ export interface EmotionHistoryItem {
 
 export interface EmotionHistoryResponse {
   events: EmotionHistoryItem[];
+  total: number;
+}
+
+export interface AuditEventItem {
+  id: string;
+  event_type: string;
+  user_id?: string | null;
+  details?: Record<string, unknown> | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AuditEventListResponse {
+  events: AuditEventItem[];
   total: number;
 }
